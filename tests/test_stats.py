@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from src.stats import mcnemar_exact, mde_paired_binary, paired_bootstrap_ci, wilcoxon_signed_rank
+from src.stats import (
+    cohens_kappa,
+    mcnemar_exact,
+    mde_paired_binary,
+    paired_bootstrap_ci,
+    wilcoxon_signed_rank,
+)
 
 
 # --- McNemar, against a hand-computed fixture ---
@@ -139,3 +145,44 @@ def test_mde_rejects_bad_inputs():
         mde_paired_binary(0, discordance=0.5)
     with pytest.raises(ValueError, match="proportion"):
         mde_paired_binary(10, discordance=1.5)
+
+
+# --- Cohen's kappa, against a hand-computed fixture ---
+
+
+def test_kappa_hand_computed_case():
+    """10 items. po = 7/10 = 0.7. Marginals: rater_a privacy=0.6/none=0.4,
+    rater_b privacy=0.5/none=0.5. pe = 0.6*0.5 + 0.4*0.5 = 0.5.
+    kappa = (0.7 - 0.5) / (1 - 0.5) = 0.4."""
+    rater_a = ["privacy"] * 6 + ["none"] * 4
+    rater_b = ["privacy", "privacy", "privacy", "privacy", "none", "none", "none", "none", "none", "privacy"]
+    assert cohens_kappa(rater_a, rater_b) == pytest.approx(0.4)
+
+
+def test_kappa_perfect_agreement_is_one():
+    labels = ["privacy", "none", "legal", "privacy", "none"]
+    assert cohens_kappa(labels, labels) == pytest.approx(1.0)
+
+
+def test_kappa_degenerate_single_category_is_zero_not_a_division_error():
+    """Both raters always say 'none': po == pe == 1, so agreement carries no
+    information. Defined as 0.0 rather than raising or reporting 1.0."""
+    assert cohens_kappa(["none"] * 5, ["none"] * 5) == 0.0
+
+
+def test_kappa_requires_equal_length():
+    with pytest.raises(ValueError, match="same length"):
+        cohens_kappa(["privacy"], ["privacy", "none"])
+
+
+def test_kappa_rejects_empty_sample():
+    with pytest.raises(ValueError, match="empty"):
+        cohens_kappa([], [])
+
+
+def test_kappa_below_chance_is_negative():
+    """Systematic disagreement: every item flips between the only two
+    categories used, so raters agree less than chance predicts."""
+    rater_a = ["privacy", "none"] * 5
+    rater_b = ["none", "privacy"] * 5
+    assert cohens_kappa(rater_a, rater_b) < 0

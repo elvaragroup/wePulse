@@ -108,6 +108,40 @@ def paired_bootstrap_ci(
     )
 
 
+def cohens_kappa(rater_a: list[str], rater_b: list[str]) -> float:
+    """Unweighted Cohen's kappa for two raters over the same categorical items.
+
+    Used by check_judge.py to compare the judge's labels against a human's on the
+    same sample (spec 4.6). Implemented by hand rather than pulled from a
+    dependency: scipy has no kappa function and this project's only other
+    dependencies are anthropic/pydantic/pyyaml/numpy.
+
+    kappa = (po - pe) / (1 - pe), where po is observed agreement and pe is the
+    agreement expected by chance from each rater's own marginal label
+    frequencies. kappa == 1.0 when the raters agree on every item and both
+    marginals are non-degenerate; when they agree on every item using only one
+    category (pe == 1), agreement carries no information, so kappa is defined
+    as 0.0 rather than dividing by zero.
+    """
+    if len(rater_a) != len(rater_b):
+        raise ValueError("paired inputs must be the same length")
+    if not rater_a:
+        raise ValueError("cannot compute kappa over an empty sample")
+
+    n = len(rater_a)
+    categories = sorted(set(rater_a) | set(rater_b))
+
+    po = sum(1 for a, b in zip(rater_a, rater_b) if a == b) / n
+
+    freq_a = {c: rater_a.count(c) / n for c in categories}
+    freq_b = {c: rater_b.count(c) / n for c in categories}
+    pe = sum(freq_a[c] * freq_b[c] for c in categories)
+
+    if pe >= 1.0:
+        return 0.0
+    return (po - pe) / (1 - pe)
+
+
 def mde_paired_binary(
     n: int,
     discordance: float,
