@@ -95,3 +95,62 @@ def test_load_event_predictions_ignores_other_events(tmp_path):
     preds = load_event_predictions(tmp_path, "evt_001")
     assert len(preds) == 1
     assert preds[0].event_id == "evt_001"
+
+
+from src.dashboard import REACTION_KEYS, ReactionRow, reaction_mix_counts, split_reacted_and_ignored
+
+
+def make_row(persona_id: str, reaction: str, intensity: float = 0.0) -> ReactionRow:
+    return ReactionRow(
+        persona_id=persona_id,
+        persona_name=f"name{persona_id}",
+        archetype="critic",
+        reaction=reaction,
+        categories=() if reaction == "ignore" else ("privacy",),
+        intensity=intensity,
+        quote=None if reaction == "ignore" else "q",
+    )
+
+
+def test_reaction_mix_counts_all_four_keys_always_present():
+    counts = reaction_mix_counts([make_row("001", "criticize", 0.5)])
+    assert counts == {"ignore": 0, "mild_concern": 0, "criticize": 1, "outrage": 0}
+
+
+def test_reaction_mix_counts_tallies_across_rows():
+    rows = [
+        make_row("001", "ignore"),
+        make_row("002", "ignore"),
+        make_row("003", "outrage", 1.0),
+        make_row("004", "mild_concern", 0.3),
+    ]
+    assert reaction_mix_counts(rows) == {"ignore": 2, "mild_concern": 1, "criticize": 0, "outrage": 1}
+
+
+def test_reaction_mix_counts_key_order_matches_reaction_keys():
+    assert list(reaction_mix_counts([]).keys()) == list(REACTION_KEYS)
+
+
+def test_split_separates_ignored_from_reacted():
+    rows = [make_row("001", "ignore"), make_row("002", "criticize", 0.5)]
+    reacted, ignored = split_reacted_and_ignored(rows)
+    assert [r.persona_id for r in reacted] == ["002"]
+    assert [r.persona_id for r in ignored] == ["001"]
+
+
+def test_split_reacted_sorted_by_intensity_descending():
+    rows = [make_row("001", "criticize", 0.3), make_row("002", "outrage", 0.9), make_row("003", "mild_concern", 0.5)]
+    reacted, _ = split_reacted_and_ignored(rows)
+    assert [r.persona_id for r in reacted] == ["002", "003", "001"]
+
+
+def test_split_ties_broken_by_persona_id():
+    rows = [make_row("003", "criticize", 0.5), make_row("001", "criticize", 0.5)]
+    reacted, _ = split_reacted_and_ignored(rows)
+    assert [r.persona_id for r in reacted] == ["001", "003"]
+
+
+def test_split_ignored_sorted_by_persona_id():
+    rows = [make_row("003", "ignore"), make_row("001", "ignore")]
+    _, ignored = split_reacted_and_ignored(rows)
+    assert [r.persona_id for r in ignored] == ["001", "003"]

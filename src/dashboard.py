@@ -80,3 +80,27 @@ def load_event_predictions(run_dir: Path, event_id: str) -> list[ArmPrediction]:
             return (len(ARM_ORDER), prediction.arm)
 
     return sorted(predictions, key=sort_key)
+
+
+REACTION_KEYS = ("ignore", "mild_concern", "criticize", "outrage")
+
+
+def reaction_mix_counts(rows: list[ReactionRow]) -> dict[str, int]:
+    counts = dict.fromkeys(REACTION_KEYS, 0)
+    for row in rows:
+        counts[row.reaction] += 1
+    return counts
+
+
+def split_reacted_and_ignored(
+    rows: list[ReactionRow],
+) -> tuple[list[ReactionRow], list[ReactionRow]]:
+    """Reacted personas first (what you actually want to read), sorted by how
+    strongly they felt; ignored personas collapsed to their own list so 20+
+    'ignore' rows don't bury the signal."""
+    reacted = sorted(
+        (r for r in rows if r.reaction != "ignore"),
+        key=lambda r: (-r.intensity, r.persona_id),
+    )
+    ignored = sorted((r for r in rows if r.reaction == "ignore"), key=lambda r: r.persona_id)
+    return reacted, ignored
