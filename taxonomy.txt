@@ -1,0 +1,14 @@
+privacy      | Privacy & data       | Collection, sharing, or misuse of personal data
+labor        | Labor & jobs         | Layoffs, outsourcing, working conditions, gig exploitation
+financial    | Financial cynicism   | Cash grab, pump, distraction from poor results
+safety       | Safety & harm        | Physical risk, health, harm to minors or vulnerable groups
+environment  | Environmental        | Greenwashing, emissions, waste, resource use
+hypocrisy    | Hypocrisy & receipts | Contradicts the company's prior statements or conduct
+legal        | Legal & regulatory   | Antitrust, compliance, licensing, regulatory violation
+pricing      | Pricing & value      | Price increases, paywalling, subscription creep
+overclaim    | Technical overclaim  | The capability described is exaggerated or misleading
+community    | Affected community   | Backlash from the specific group named or targeted
+accessibility| Accessibility        | Excludes disabled, low-income, or non-English users
+security     | Security             | Vulnerability, breach risk, weak safeguards
+aesthetic    | Taste & tone         | Cringe, tone-deaf timing, bad creative
+none         | No meaningful backlash| Reaction was neutral, positive, or negligible

@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.DS_Store
+*.egg-info/
+
+# Run artifacts and results are reproducible from the manifest + cache.
+runs/*
+!runs/.gitkeep
+results/*
+!results/.gitkeep
+
+# Ground truth is pasted by hand and may contain third-party content.
+ground_truth/raw/*
+!ground_truth/raw/.gitkeep
+ground_truth/labeled/*
+!ground_truth/labeled/.gitkeep

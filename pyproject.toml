@@ -1,0 +1,30 @@
+[project]
+name = "crisis-sim"
+version = "0.1.0"
+description = "Validation harness measuring whether an LLM persona ensemble predicts real-world backlash better than a naive LLM call or a human."
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.120.0",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "scipy>=1.14",
+    "numpy>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["error::DeprecationWarning"]

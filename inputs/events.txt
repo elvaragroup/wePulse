@@ -1,0 +1,90 @@
+# These three events are FICTIONAL placeholders that exercise the parser and the
+# smoke test. Replace them with real announcements before running the study --
+# see inputs/README.md. Fictional events cannot produce ground truth, so they
+# must not appear in any scored run.
+#
+# Spec 0.6: at least 40% of the real event set must be announcements that
+# produced no meaningful backlash. run_sim.py reports the share and warns below
+# that line.
+
+=== EVENT ===
+id: evt_001
+company: Acme Corp
+sector: consumer_tech
+date: 2026-06-14
+headline: Acme introduces Acme Assist, an AI layer across all Acme apps
+source_url: https://example.invalid/press/acme-assist
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Acme Corp today announced Acme Assist, an intelligent layer that will be built
+into every Acme application starting next month. Acme Assist reads the context of
+what you are working on and offers suggestions before you ask.
+
+To make Acme Assist genuinely useful, it draws on your activity across Acme Mail,
+Acme Drive, and Acme Calendar, along with signals from our partners. Acme Assist
+will be enabled by default for all accounts. Users who prefer not to use it can
+turn it off in Settings at any time.
+
+"This is the most personal product we have ever built," said a spokesperson.
+"Acme Assist knows you, so you spend less time explaining yourself to software."
+
+Acme Assist launches on July 15 at no additional cost.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_002
+company: Northwind Logistics
+sector: industrial
+date: 2026-06-20
+headline: Northwind opens a distribution centre in Millbrook, adding 400 jobs
+source_url: https://example.invalid/press/northwind-millbrook
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+Northwind Logistics has opened its newest regional distribution centre in
+Millbrook, bringing approximately 400 full-time positions to the area. Hiring
+began in April and the facility reached full staffing this week.
+
+The 240,000 square foot site consolidates three older leased warehouses into one
+location. All employees from the previous facilities were offered positions at
+the new centre at their existing pay grade, and Northwind covered relocation
+costs for the twelve employees who moved.
+
+The building runs on a rooftop solar array covering roughly 30% of its annual
+electricity use, with the remainder purchased on the regional grid.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_003
+company: Contoso Media
+sector: media
+date: 2026-06-28
+headline: Contoso Media raises the price of Contoso+ and adds an ad-supported tier
+source_url: https://example.invalid/press/contoso-plus-pricing
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Contoso Media announced changes to Contoso+ subscriptions effective August 1.
+The standard ad-free plan moves from $11.99 to $16.99 per month. A new
+ad-supported plan is available at $6.99 per month.
+
+Existing subscribers on the standard plan will be moved to the new price at their
+next renewal. Subscribers who prefer the lower price may switch to the
+ad-supported plan, which carries the same catalogue at up to 1080p, down from 4K.
+
+Offline downloads are now limited to the ad-free plan.
+
+"We are investing more in original programming than at any point in our history,"
+said a Contoso spokesperson.
+--- PRIOR STATEMENTS ---
+2024-03-11, earnings call: "We have no plans to introduce advertising into
+Contoso+. Our subscribers pay us precisely so they do not have to watch ads, and
+we intend to honour that."
+
+2025-09-02, blog post "Our pricing promise": "We will always keep a 4K tier
+available at our entry price point. Quality should not be a luxury add-on."
+=== END EVENT ===

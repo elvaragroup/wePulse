@@ -1,0 +1,76 @@
+# Frozen before any run. Changing anything here starts a new run; prior results
+# cannot be pooled across a config change (see spec 0.5).
+
+models:
+  persona: claude-haiku-4-5-20251001
+  naive: claude-haiku-4-5-20251001 # MUST equal models.persona (spec 5). Enforced in src/config.py.
+  judge: claude-sonnet-5
+  probe: claude-sonnet-5
+
+temperature:
+  persona: 0.7
+  naive: 0.7
+  # DEVIATION (spec 5 asks for judge temperature 0.0): claude-sonnet-5 returns
+  # HTTP 400 on any non-default sampling parameter. `null` means "send no
+  # temperature field". Judge determinism is instead delivered by disabling
+  # thinking (below) and by the response cache, which is what spec 4.3's
+  # byte-reproducibility requirement actually depends on.
+  judge: null
+  probe: null # spec 4.1 asks for 1.0, which is the API default. Sending nothing is equivalent.
+
+# DEVIATION (spec 4.3 asks for a fixed seed): the Anthropic API exposes no seed
+# parameter on any model. Reproducibility comes from runs/<id>/cache/ alone.
+# Cache keys are sha256 over canonical JSON of the full request kwargs.
+
+thinking:
+  # Disabled for the judge so repeated labeling of the same reaction text is as
+  # stable as the API allows. Personas and the naive baseline are left at the
+  # model default.
+  judge: disabled
+
+max_tokens:
+  persona: 1024
+  naive: 1024
+  judge: 2048
+  probe: 2048
+
+k: 3
+backlash_threshold: 0.25
+concurrency: 8
+max_retries: 3
+bootstrap_resamples: 10000
+
+# Stratified, not sequential (spec 4.2). Nested: B3 < B8 < B15 < B30, so arm-size
+# comparisons vary only by what was added.
+#
+# Persona id ranges:
+#   001-013  critic, one per taxonomy axis
+#   014-017  insider
+#   018-022  critic, second variant on a high-frequency axis
+#   023-027  neutral
+#   028-030  sympathetic
+subsets:
+  # 1 critic, 1 insider, 1 neutral
+  B3: ["001", "014", "023"]
+  # 5 critics across the high-frequency axes, 1 insider, 1 neutral, 1 sympathetic
+  B8: ["001", "003", "006", "008", "009", "014", "023", "028"]
+  # 9 critics across 9 distinct axes, 2 insiders, 3 neutrals, 1 sympathetic
+  B15:
+    [
+      "001",
+      "002",
+      "003",
+      "004",
+      "006",
+      "008",
+      "009",
+      "010",
+      "012",
+      "014",
+      "016",
+      "023",
+      "024",
+      "025",
+      "028",
+    ]
+  # B30 is every persona file; it is resolved at runtime, not listed here.
