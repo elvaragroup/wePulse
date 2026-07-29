@@ -241,3 +241,94 @@ def test_render_page_wraps_cards_with_run_id():
     assert "run_001" in page
     assert "card A" in page and "card B" in page
     assert "<html" in page
+
+
+import shutil
+
+from src.dashboard import DashboardError, build_dashboard, main
+
+
+@pytest.fixture
+def sandbox(tmp_path, repo):
+    root = tmp_path / "crisis-sim"
+    root.mkdir()
+    shutil.copytree(repo / "personas", root / "personas")
+    (root / "inputs").mkdir()
+    (root / "inputs" / "events.txt").write_text(
+        "=== EVENT ===\n"
+        "id: evt_001\n"
+        "company: Acme Corp\n"
+        "sector: consumer_tech\n"
+        "date: 2026-06-14\n"
+        "headline: Acme launches an AI layer\n"
+        "expected_null: false\n"
+        "---\n"
+        "Acme Corp today announced an AI layer.\n"
+        "=== END EVENT ===\n"
+        "\n"
+        "=== EVENT ===\n"
+        "id: evt_002\n"
+        "company: Northwind\n"
+        "sector: industrial\n"
+        "date: 2026-06-20\n"
+        "headline: Northwind opens a warehouse\n"
+        "expected_null: true\n"
+        "---\n"
+        "Northwind opened a distribution centre.\n"
+        "=== END EVENT ===\n",
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_build_dashboard_raises_without_manifest(sandbox):
+    with pytest.raises(DashboardError, match="no run at"):
+        build_dashboard(repo=sandbox, run_id="run_001")
+
+
+def test_build_dashboard_renders_missing_card_for_unrun_event(sandbox):
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+
+    page = build_dashboard(repo=sandbox, run_id="run_001")
+    assert "evt_001" in page
+    assert "evt_002" in page
+    assert "not yet run" in page.lower()
+
+
+def test_build_dashboard_renders_full_card_when_data_present(sandbox):
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    write_reaction(
+        run_dir / "raw" / "B30" / "evt_001" / "001.json",
+        reaction="criticize",
+        categories=["privacy"],
+        intensity=0.8,
+        quote="q",
+    )
+    write_prediction(run_dir / "predictions" / "evt_001__A.json", event_id="evt_001", arm="A")
+
+    page = build_dashboard(repo=sandbox, run_id="run_001")
+    assert "privacy_hawk" in page
+    assert "not yet run" in page.lower()  # evt_002 still has no data
+
+
+def test_main_writes_dashboard_html_to_default_path(sandbox):
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+
+    exit_code = main(["run_001", "--repo", str(sandbox)])
+    assert exit_code == 0
+    out_path = run_dir / "dashboard.html"
+    assert out_path.exists()
+    assert "evt_001" in out_path.read_text(encoding="utf-8")
+
+
+def test_main_returns_nonzero_for_missing_run(sandbox, capsys):
+    exit_code = main(["does_not_exist", "--repo", str(sandbox)])
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "error" in captured.err.lower()

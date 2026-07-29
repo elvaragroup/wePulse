@@ -8,13 +8,15 @@ self-contained HTML file.
 
 from __future__ import annotations
 
+import argparse
 import html
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.events import Event
+from src.events import Event, load_events
 from src.models import ArmPrediction, PersonaReaction
-from src.personas import Persona
+from src.personas import Persona, load_personas
 
 REPO = Path(__file__).resolve().parent.parent
 ARM_ORDER = ("A", "B3", "B8", "B15", "B30", "C")
@@ -205,3 +207,48 @@ def render_page(run_id: str, cards_html: list[str]) -> str:
 </body>
 </html>
 """
+
+
+def build_dashboard(*, repo: Path = REPO, run_id: str) -> str:
+    run_dir = repo / "runs" / run_id
+    if not (run_dir / "manifest.json").exists():
+        raise DashboardError(f"no run at {run_dir}")
+
+    events = load_events(repo / "inputs" / "events.txt")
+    personas_by_id = {p.id: p for p in load_personas(repo / "personas")}
+
+    cards: list[str] = []
+    for event in events:
+        predictions = load_event_predictions(run_dir, event.id)
+        reactions = load_event_reactions(run_dir, event.id, personas_by_id)
+        if not predictions and not reactions:
+            cards.append(render_missing_event_card(event))
+            continue
+        counts = reaction_mix_counts(reactions)
+        reacted, ignored = split_reacted_and_ignored(reactions)
+        cards.append(render_event_card(event, reacted, ignored, predictions, counts))
+
+    return render_page(run_id, cards)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run_id")
+    parser.add_argument("--repo", type=Path, default=REPO)
+    parser.add_argument("--out", type=Path, default=None)
+    args = parser.parse_args(argv)
+
+    try:
+        page = build_dashboard(repo=args.repo, run_id=args.run_id)
+    except DashboardError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    out_path = args.out or (args.repo / "runs" / args.run_id / "dashboard.html")
+    out_path.write_text(page, encoding="utf-8")
+    print(f"wrote {out_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
