@@ -8,9 +8,11 @@ self-contained HTML file.
 
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.events import Event
 from src.models import ArmPrediction, PersonaReaction
 from src.personas import Persona
 
@@ -104,3 +106,102 @@ def split_reacted_and_ignored(
     )
     ignored = sorted((r for r in rows if r.reaction == "ignore"), key=lambda r: r.persona_id)
     return reacted, ignored
+
+
+def _escape(text: str) -> str:
+    return html.escape(text, quote=True)
+
+
+def render_event_card(
+    event: Event,
+    reacted: list[ReactionRow],
+    ignored: list[ReactionRow],
+    predictions: list[ArmPrediction],
+    counts: dict[str, int],
+) -> str:
+    prediction_rows = "\n".join(
+        f'<div class="arm-row"><span class="arm-label">{_escape(p.arm)}</span>'
+        f'<span class="arm-cats">{_escape(", ".join(p.ranked_categories))}</span>'
+        f'<span class="arm-flag">{"backlash" if p.backlash_predicted else "no backlash"}</span></div>'
+        for p in predictions
+    )
+    reacted_rows = "\n".join(
+        f"<tr><td>{_escape(r.persona_id)} {_escape(r.persona_name)}</td><td>{_escape(r.archetype)}</td>"
+        f"<td>{_escape(r.reaction)}</td><td>{_escape(', '.join(r.categories))}</td>"
+        f"<td>{r.intensity:.2f}</td><td>{_escape(r.quote or '')}</td></tr>"
+        for r in reacted
+    )
+    ignored_list = ", ".join(f"{_escape(r.persona_id)} {_escape(r.persona_name)}" for r in ignored)
+    counts_line = " | ".join(f"{key}: {count}" for key, count in counts.items())
+
+    return f"""
+<details class="event-card">
+  <summary>
+    <span class="event-id">{_escape(event.id)}</span>
+    <span class="event-company">{_escape(event.company)}</span>
+    <span class="event-headline">{_escape(event.headline)}</span>
+    <span class="badge">expected_null: {event.expected_null}</span>
+  </summary>
+  <div class="predictions">
+    {prediction_rows}
+  </div>
+  <pre class="announcement">{_escape(event.announcement)}</pre>
+  <div class="reaction-mix">{counts_line}</div>
+  <table class="reactions">
+    <thead><tr><th>Persona</th><th>Archetype</th><th>Reaction</th><th>Categories</th><th>Intensity</th><th>Quote</th></tr></thead>
+    <tbody>
+      {reacted_rows}
+    </tbody>
+  </table>
+  <details class="ignored-list">
+    <summary>{len(ignored)} persona(s) ignored</summary>
+    <p>{ignored_list}</p>
+  </details>
+</details>
+""".strip()
+
+
+def render_missing_event_card(event: Event) -> str:
+    return f"""
+<details class="event-card missing">
+  <summary>
+    <span class="event-id">{_escape(event.id)}</span>
+    <span class="event-company">{_escape(event.company)}</span>
+    <span class="event-headline">{_escape(event.headline)}</span>
+    <span class="badge missing">not yet run</span>
+  </summary>
+  <p>No predictions or persona reactions found for this event in this run.</p>
+</details>
+""".strip()
+
+
+PAGE_STYLE = """
+body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+.event-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem; padding: 0.75rem 1rem; }
+.event-card summary { cursor: pointer; display: flex; gap: 0.75rem; align-items: center; }
+.event-id { font-weight: 700; }
+.badge { margin-left: auto; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eee; }
+.badge.missing { background: #fee; }
+.arm-row { display: flex; gap: 0.75rem; font-family: monospace; font-size: 0.9rem; }
+.arm-label { font-weight: 700; width: 3.5rem; }
+table.reactions { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+table.reactions th, table.reactions td { border-bottom: 1px solid #eee; padding: 0.25rem 0.5rem; text-align: left; font-size: 0.9rem; }
+.announcement { white-space: pre-wrap; background: #fafafa; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+"""
+
+
+def render_page(run_id: str, cards_html: list[str]) -> str:
+    cards = "\n".join(cards_html)
+    return f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>crisis-sim dashboard: {_escape(run_id)}</title>
+<style>{PAGE_STYLE}</style>
+</head>
+<body>
+<h1>Run {_escape(run_id)}</h1>
+{cards}
+</body>
+</html>
+"""

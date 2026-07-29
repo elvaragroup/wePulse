@@ -154,3 +154,90 @@ def test_split_ignored_sorted_by_persona_id():
     rows = [make_row("003", "ignore"), make_row("001", "ignore")]
     _, ignored = split_reacted_and_ignored(rows)
     assert [r.persona_id for r in ignored] == ["001", "003"]
+
+
+from src.dashboard import render_event_card, render_missing_event_card, render_page
+from src.events import Event
+
+
+def make_event(**overrides) -> Event:
+    defaults = dict(
+        id="evt_001",
+        company="Acme Corp",
+        sector="consumer_tech",
+        date="2026-06-14",
+        headline="Acme introduces Acme Assist",
+        source_url=None,
+        expected_null=False,
+        announcement="Acme Corp today announced Acme Assist.",
+        prior_statements=None,
+    )
+    defaults.update(overrides)
+    return Event(**defaults)
+
+
+def test_render_event_card_includes_headline_and_arm_predictions():
+    event = make_event()
+    prediction = ArmPrediction(
+        arm="B30",
+        event_id="evt_001",
+        ranked_categories=["privacy", "overclaim", "financial"],
+        scores={},
+        backlash_predicted=True,
+    )
+    reacted = [make_row("001", "criticize", 0.8)]
+    html_out = render_event_card(event, reacted, [], [prediction], reaction_mix_counts(reacted))
+    assert "evt_001" in html_out
+    assert "Acme introduces Acme Assist" in html_out
+    assert "B30" in html_out
+    assert "privacy" in html_out and "overclaim" in html_out
+
+
+def test_render_event_card_escapes_html_in_announcement_and_quotes():
+    event = make_event(announcement="Uses <script>alert(1)</script> data.")
+    reacted = [
+        ReactionRow(
+            persona_id="001",
+            persona_name="privacy_hawk",
+            archetype="critic",
+            reaction="criticize",
+            categories=("privacy",),
+            intensity=0.8,
+            quote="<b>quote</b>",
+        )
+    ]
+    html_out = render_event_card(event, reacted, [], [], reaction_mix_counts(reacted))
+    assert "<script>" not in html_out
+    assert "&lt;script&gt;" in html_out
+    assert "<b>quote</b>" not in html_out
+
+
+def test_render_event_card_lists_ignored_personas_compactly():
+    event = make_event()
+    ignored = [
+        ReactionRow(
+            persona_id="002",
+            persona_name="labor_advocate",
+            archetype="critic",
+            reaction="ignore",
+            categories=(),
+            intensity=0.0,
+            quote=None,
+        )
+    ]
+    html_out = render_event_card(event, [], ignored, [], reaction_mix_counts([]))
+    assert "labor_advocate" in html_out
+
+
+def test_render_missing_event_card_notes_not_yet_run():
+    event = make_event(id="evt_003")
+    html_out = render_missing_event_card(event)
+    assert "evt_003" in html_out
+    assert "not yet run" in html_out.lower()
+
+
+def test_render_page_wraps_cards_with_run_id():
+    page = render_page("run_001", ["<details>card A</details>", "<details>card B</details>"])
+    assert "run_001" in page
+    assert "card A" in page and "card B" in page
+    assert "<html" in page
