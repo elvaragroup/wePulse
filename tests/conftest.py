@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.config import load_config
+from src.personas import load_personas
 from src.taxonomy import load_taxonomy
 
 REPO = Path(__file__).resolve().parent.parent
@@ -23,6 +24,11 @@ def taxonomy():
 @pytest.fixture(scope="session")
 def config():
     return load_config(REPO / "config.yaml")
+
+
+@pytest.fixture(scope="session")
+def personas():
+    return load_personas(REPO / "personas")
 
 
 VALID_PERSONA = """\
