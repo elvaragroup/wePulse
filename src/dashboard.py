@@ -146,10 +146,12 @@ def render_event_card(
     return f"""
 <details class="event-card">
   <summary>
-    <span class="event-id">{_escape(event.id)}</span>
-    <span class="event-company">{_escape(event.company)}</span>
-    <span class="event-headline">{_escape(event.headline)}</span>
-    <span class="badge">expected_null: {event.expected_null}</span>
+    <div class="event-header">
+      <span class="event-id">{_escape(event.id)}</span>
+      <span class="event-company">{_escape(event.company)}</span>
+      <span class="event-headline">{_escape(event.headline)}</span>
+      <span class="badge">expected_null: {event.expected_null}</span>
+    </div>
     <div class="predictions">
       {prediction_rows}
     </div>
@@ -174,10 +176,12 @@ def render_missing_event_card(event: Event) -> str:
     return f"""
 <details class="event-card missing">
   <summary>
-    <span class="event-id">{_escape(event.id)}</span>
-    <span class="event-company">{_escape(event.company)}</span>
-    <span class="event-headline">{_escape(event.headline)}</span>
-    <span class="badge missing">not yet run</span>
+    <div class="event-header">
+      <span class="event-id">{_escape(event.id)}</span>
+      <span class="event-company">{_escape(event.company)}</span>
+      <span class="event-headline">{_escape(event.headline)}</span>
+      <span class="badge missing">not yet run</span>
+    </div>
   </summary>
   <p>No predictions or persona reactions found for this event in this run.</p>
 </details>
@@ -187,11 +191,13 @@ def render_missing_event_card(event: Event) -> str:
 PAGE_STYLE = """
 body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
 .event-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem; padding: 0.75rem 1rem; }
-.event-card summary { cursor: pointer; display: flex; gap: 0.75rem; align-items: center; }
+.event-card summary { cursor: pointer; }
+.event-header { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 .event-id { font-weight: 700; }
 .badge { margin-left: auto; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eee; }
 .badge.missing { background: #fee; }
-.arm-row { display: flex; gap: 0.75rem; font-family: monospace; font-size: 0.9rem; }
+.predictions { margin-top: 0.5rem; }
+.arm-row { display: flex; gap: 0.75rem; font-family: monospace; font-size: 0.9rem; flex-wrap: wrap; }
 .arm-label { font-weight: 700; width: 3.5rem; }
 table.reactions { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
 table.reactions th, table.reactions td { border-bottom: 1px solid #eee; padding: 0.25rem 0.5rem; text-align: left; font-size: 0.9rem; }
