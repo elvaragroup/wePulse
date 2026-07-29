@@ -1,10 +1,27 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
-from src.dashboard import ARM_ORDER, ReactionRow, load_event_predictions, load_event_reactions
+from src.dashboard import (
+    ARM_ORDER,
+    REACTION_KEYS,
+    DashboardError,
+    ReactionRow,
+    build_dashboard,
+    load_event_predictions,
+    load_event_reactions,
+    main,
+    reaction_mix_counts,
+    render_event_card,
+    render_missing_event_card,
+    render_page,
+    split_reacted_and_ignored,
+)
+from src.events import Event
 from src.models import ArmPrediction, PersonaReaction
 
 
@@ -97,9 +114,6 @@ def test_load_event_predictions_ignores_other_events(tmp_path):
     assert preds[0].event_id == "evt_001"
 
 
-from src.dashboard import REACTION_KEYS, ReactionRow, reaction_mix_counts, split_reacted_and_ignored
-
-
 def make_row(persona_id: str, reaction: str, intensity: float = 0.0) -> ReactionRow:
     return ReactionRow(
         persona_id=persona_id,
@@ -156,10 +170,6 @@ def test_split_ignored_sorted_by_persona_id():
     assert [r.persona_id for r in ignored] == ["001", "003"]
 
 
-from src.dashboard import render_event_card, render_missing_event_card, render_page
-from src.events import Event
-
-
 def make_event(**overrides) -> Event:
     defaults = dict(
         id="evt_001",
@@ -193,6 +203,29 @@ def test_render_event_card_includes_headline_and_arm_predictions():
     assert "privacy" in html_out and "overclaim" in html_out
 
 
+def test_render_event_card_predictions_render_inside_summary_when_collapsed():
+    """The design spec puts arm predictions in the 'Collapsed (always visible)'
+    section. HTML <details> only renders <summary>'s content when collapsed
+    (no `open` attribute, no JS toggling), so the predictions div must appear
+    before </summary> in the raw markup -- not after it (finding #1)."""
+    event = make_event()
+    prediction = ArmPrediction(
+        arm="B30",
+        event_id="evt_001",
+        ranked_categories=["privacy", "overclaim", "financial"],
+        scores={},
+        backlash_predicted=True,
+    )
+    html_out = render_event_card(event, [], [], [prediction], reaction_mix_counts([]))
+    assert "<details" in html_out
+    assert " open" not in html_out and "<details open" not in html_out  # no `open` attribute anywhere
+    predictions_index = html_out.index('<div class="predictions">')
+    summary_close_index = html_out.index("</summary>")
+    assert predictions_index < summary_close_index, (
+        "predictions div must appear before </summary> so it is visible while the card is collapsed"
+    )
+
+
 def test_render_event_card_escapes_html_in_announcement_and_quotes():
     event = make_event(announcement="Uses <script>alert(1)</script> data.")
     reacted = [
@@ -210,6 +243,57 @@ def test_render_event_card_escapes_html_in_announcement_and_quotes():
     assert "<script>" not in html_out
     assert "&lt;script&gt;" in html_out
     assert "<b>quote</b>" not in html_out
+
+
+HOSTILE = '<script>alert(1)</script>"><svg onload=alert(1)>'
+
+
+def test_render_event_card_escapes_hostile_markup_in_all_free_text_fields():
+    event = make_event(id=HOSTILE, company=HOSTILE, headline=HOSTILE, announcement=HOSTILE)
+    reacted = [
+        ReactionRow(
+            persona_id=HOSTILE,
+            persona_name=HOSTILE,
+            archetype=HOSTILE,
+            reaction="criticize",
+            categories=("privacy",),
+            intensity=0.8,
+            quote=HOSTILE,
+        )
+    ]
+    ignored = [
+        ReactionRow(
+            persona_id=HOSTILE,
+            persona_name=HOSTILE,
+            archetype=HOSTILE,
+            reaction="ignore",
+            categories=(),
+            intensity=0.0,
+            quote=None,
+        )
+    ]
+    html_out = render_event_card(event, reacted, ignored, [], reaction_mix_counts(reacted))
+    assert "<script" not in html_out
+    assert "<svg" not in html_out
+    assert "&lt;script&gt;" in html_out
+    assert "&lt;svg" in html_out
+
+
+def test_render_missing_event_card_escapes_hostile_markup():
+    event = make_event(id=HOSTILE, company=HOSTILE, headline=HOSTILE)
+    html_out = render_missing_event_card(event)
+    assert "<script" not in html_out
+    assert "<svg" not in html_out
+    assert "&lt;script&gt;" in html_out
+    assert "&lt;svg" in html_out
+
+
+def test_render_page_escapes_hostile_run_id():
+    page = render_page(HOSTILE, [])
+    assert "<script" not in page
+    assert "<svg" not in page
+    assert "&lt;script&gt;" in page
+    assert "&lt;svg" in page
 
 
 def test_render_event_card_lists_ignored_personas_compactly():
@@ -241,11 +325,6 @@ def test_render_page_wraps_cards_with_run_id():
     assert "run_001" in page
     assert "card A" in page and "card B" in page
     assert "<html" in page
-
-
-import shutil
-
-from src.dashboard import DashboardError, build_dashboard, main
 
 
 @pytest.fixture
@@ -332,3 +411,50 @@ def test_main_returns_nonzero_for_missing_run(sandbox, capsys):
     assert exit_code == 1
     captured = capsys.readouterr()
     assert "error" in captured.err.lower()
+
+
+def test_main_creates_missing_parent_directories_for_out(sandbox):
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    out_path = sandbox / "nested" / "deep" / "dashboard.html"
+
+    exit_code = main(["run_001", "--repo", str(sandbox), "--out", str(out_path)])
+    assert exit_code == 0
+    assert out_path.exists()
+
+
+def test_main_returns_nonzero_for_malformed_events_file(sandbox, capsys):
+    """A corrupt inputs/events.txt raises EventParseError -- main must catch it
+    and print a clean error instead of a raw traceback (finding #3)."""
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    (sandbox / "inputs" / "events.txt").write_text("not a valid events file at all", encoding="utf-8")
+
+    exit_code = main(["run_001", "--repo", str(sandbox)])
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "error" in captured.err.lower()
+    assert "Traceback" not in captured.err
+
+
+def test_main_returns_nonzero_for_corrupt_reaction_json(sandbox, capsys):
+    """A truncated/corrupt persona reaction JSON file (e.g. a run killed
+    mid-write) raises a pydantic ValidationError -- main must catch it too
+    (finding #3)."""
+    run_dir = sandbox / "runs" / "run_001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.json").write_text("{}", encoding="utf-8")
+    reaction_path = run_dir / "raw" / "B30" / "evt_001" / "001.json"
+    reaction_path.parent.mkdir(parents=True, exist_ok=True)
+    reaction_path.write_text('{"reaction": "criticize"}', encoding="utf-8")  # missing required fields
+
+    with pytest.raises(ValidationError):
+        PersonaReaction.model_validate_json(reaction_path.read_text(encoding="utf-8"))
+
+    exit_code = main(["run_001", "--repo", str(sandbox)])
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "error" in captured.err.lower()
+    assert "Traceback" not in captured.err

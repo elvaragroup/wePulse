@@ -13,13 +13,16 @@ import html
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import get_args
 
-from src.events import Event, load_events
-from src.models import ArmPrediction, PersonaReaction
-from src.personas import Persona, load_personas
+from pydantic import ValidationError
+
+from src.events import Event, EventParseError, load_events
+from src.models import Arm, ArmPrediction, PersonaReaction, Reaction
+from src.personas import Persona, PersonaError, load_personas
 
 REPO = Path(__file__).resolve().parent.parent
-ARM_ORDER = ("A", "B3", "B8", "B15", "B30", "C")
+ARM_ORDER = get_args(Arm)
 
 
 class DashboardError(RuntimeError):
@@ -86,7 +89,7 @@ def load_event_predictions(run_dir: Path, event_id: str) -> list[ArmPrediction]:
     return sorted(predictions, key=sort_key)
 
 
-REACTION_KEYS = ("ignore", "mild_concern", "criticize", "outrage")
+REACTION_KEYS = get_args(Reaction)
 
 
 def reaction_mix_counts(rows: list[ReactionRow]) -> dict[str, int]:
@@ -114,6 +117,10 @@ def _escape(text: str) -> str:
     return html.escape(text, quote=True)
 
 
+def _persona_label(row: ReactionRow) -> str:
+    return f"{_escape(row.persona_id)} {_escape(row.persona_name)}"
+
+
 def render_event_card(
     event: Event,
     reacted: list[ReactionRow],
@@ -128,12 +135,12 @@ def render_event_card(
         for p in predictions
     )
     reacted_rows = "\n".join(
-        f"<tr><td>{_escape(r.persona_id)} {_escape(r.persona_name)}</td><td>{_escape(r.archetype)}</td>"
+        f"<tr><td>{_persona_label(r)}</td><td>{_escape(r.archetype)}</td>"
         f"<td>{_escape(r.reaction)}</td><td>{_escape(', '.join(r.categories))}</td>"
         f"<td>{r.intensity:.2f}</td><td>{_escape(r.quote or '')}</td></tr>"
         for r in reacted
     )
-    ignored_list = ", ".join(f"{_escape(r.persona_id)} {_escape(r.persona_name)}" for r in ignored)
+    ignored_list = ", ".join(_persona_label(r) for r in ignored)
     counts_line = " | ".join(f"{key}: {count}" for key, count in counts.items())
 
     return f"""
@@ -143,10 +150,10 @@ def render_event_card(
     <span class="event-company">{_escape(event.company)}</span>
     <span class="event-headline">{_escape(event.headline)}</span>
     <span class="badge">expected_null: {event.expected_null}</span>
+    <div class="predictions">
+      {prediction_rows}
+    </div>
   </summary>
-  <div class="predictions">
-    {prediction_rows}
-  </div>
   <pre class="announcement">{_escape(event.announcement)}</pre>
   <div class="reaction-mix">{counts_line}</div>
   <table class="reactions">
@@ -240,11 +247,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         page = build_dashboard(repo=args.repo, run_id=args.run_id)
-    except DashboardError as exc:
+    except (DashboardError, EventParseError, PersonaError, OSError, ValidationError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     out_path = args.out or (args.repo / "runs" / args.run_id / "dashboard.html")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(page, encoding="utf-8")
     print(f"wrote {out_path}")
     return 0
