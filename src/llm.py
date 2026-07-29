@@ -268,8 +268,9 @@ class AnthropicLLMClient(LLMClient):
         key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not key:
             raise RuntimeError(
-                "ANTHROPIC_API_KEY is not set. Copy .env.example to .env and fill it in, "
-                "or export the variable."
+                "ANTHROPIC_API_KEY is not set. Copy .env.example to .env and fill it in, then "
+                "run with `uv run --env-file .env ...` -- uv does not read .env automatically -- "
+                "or export the variable directly."
             )
         self._client = AsyncAnthropic(api_key=key, max_retries=0)
 

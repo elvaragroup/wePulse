@@ -1,0 +1,5 @@
+{
+  "persona_set_hash": "2ec30ae6af168481140388d179491bf31328890b33a566a2e007cf467f428c03",
+  "frozen_at": "2026-07-29T16:51:42Z",
+  "note": "The persona set as first run. Runs whose hash differs are marked dev_set and cannot be pooled with this one (spec 0.5)."
+}

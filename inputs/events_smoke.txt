@@ -1,0 +1,56 @@
+# A cheap 2-event subset of the FICTIONAL placeholders in events.txt (evt_001,
+# evt_002), for build-order step 7's smoke test: enough to exercise run_sim.py
+# and probe_leakage.py against the real API without paying for all 3 events'
+# worth of persona calls. Fictional events cannot produce ground truth, so
+# this file must not appear in any scored run.
+
+=== EVENT ===
+id: evt_001
+company: Acme Corp
+sector: consumer_tech
+date: 2026-06-14
+headline: Acme introduces Acme Assist, an AI layer across all Acme apps
+source_url: https://example.invalid/press/acme-assist
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Acme Corp today announced Acme Assist, an intelligent layer that will be built
+into every Acme application starting next month. Acme Assist reads the context of
+what you are working on and offers suggestions before you ask.
+
+To make Acme Assist genuinely useful, it draws on your activity across Acme Mail,
+Acme Drive, and Acme Calendar, along with signals from our partners. Acme Assist
+will be enabled by default for all accounts. Users who prefer not to use it can
+turn it off in Settings at any time.
+
+"This is the most personal product we have ever built," said a spokesperson.
+"Acme Assist knows you, so you spend less time explaining yourself to software."
+
+Acme Assist launches on July 15 at no additional cost.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_002
+company: Northwind Logistics
+sector: industrial
+date: 2026-06-20
+headline: Northwind opens a distribution centre in Millbrook, adding 400 jobs
+source_url: https://example.invalid/press/northwind-millbrook
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+Northwind Logistics has opened its newest regional distribution centre in
+Millbrook, bringing approximately 400 full-time positions to the area. Hiring
+began in April and the facility reached full staffing this week.
+
+The 240,000 square foot site consolidates three older leased warehouses into one
+location. All employees from the previous facilities were offered positions at
+the new centre at their existing pay grade, and Northwind covered relocation
+costs for the twelve employees who moved.
+
+The building runs on a rooftop solar array covering roughly 30% of its annual
+electricity use, with the remainder purchased on the regional grid.
+=== END EVENT ===
+
