@@ -88,3 +88,361 @@ we intend to honour that."
 2025-09-02, blog post "Our pricing promise": "We will always keep a 4K tier
 available at our entry price point. Quality should not be a luxury add-on."
 === END EVENT ===
+
+=== EVENT ===
+id: evt_021
+company: Department of Justice / NVIDIA
+sector: semiconductor
+date: 2025-11-12
+headline: DOJ charges four individuals in scheme to illegally export NVIDIA AI GPUs to China
+source_url: https://www.justice.gov/opa/pr/four-charged-illegal-export-ai-gpus
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+The Department of Justice today unsealed criminal charges against four individuals accused of conspiring to illegally export advanced NVIDIA AI semiconductor GPUs to restricted entities in China. 
+
+According to court filings, the defendants established a shell company registered as a commercial real estate firm in Florida to purchase high-performance AI chips. The hardware was subsequently re-routed through transshipment points in Southeast Asia to circumvent U.S. export controls. 
+
+"Efforts to evade United States export controls on critical dual-use artificial intelligence technologies pose a direct threat to national security," said a Justice Department official. All four defendants face charges of conspiracy, export control violations, and smuggling.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_022
+company: Milieu AI
+sector: consumer_health
+date: 2025-11-20
+headline: Skincare startup Milieu raises $550,000 lead seed investment following beta validation
+source_url: https://example.com/press/milieu-ai-seed-funding
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+Milieu AI, a personal health and skincare technology startup, today announced the closing of a $550,000 lead seed investment round. The funding follows the successful completion of a 1,000-user closed beta test evaluating its personalized AI skin diagnostic formulation engine.
+
+The funding round was led by Apex Health Ventures, with participation from angel investors in the beauty technology sector. The company will use the capital to scale its engineering team and prepare its core formulation software for general availability in late 2026.
+
+"Our beta feedback demonstrated strong user retention and measurable improvements in diagnostic consistency," said the founder of Milieu AI.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_023
+company: The Coca-Cola Company
+sector: consumer_goods
+date: 2025-12-08
+headline: Coca-Cola debuts 100% AI-generated global Christmas advertising campaign
+source_url: https://example.com/press/coca-cola-holiday-ai
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+The Coca-Cola Company today unveiled its 2025 global holiday marketing campaign, featuring a complete reimagining of its iconic "Holidays Are Coming" advertisement produced entirely using generative artificial intelligence models.
+
+Created in collaboration with specialized generative AI studios, the commercial utilizes synthetic rendering for all characters, landscapes, and holiday vehicles. Coca-Cola stated that leveraging generative AI allowed the marketing team to produce localized visual variants for over 80 global markets in a fraction of traditional production timelines.
+
+"Generative AI has enabled us to honor our heritage while exploring cutting-edge storytelling efficiency," said Coca-Cola's global head of generative digital creative.
+--- PRIOR STATEMENTS ---
+2023-11-15, global brand manifesto: "Real human connection and authentic human artistry remain the beating heart of the Coca-Cola brand experience. Technology serves the story, but human emotion tells it."
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_004
+company: LG Electronics
+sector: consumer_electronics
+date: 2025-12-14
+headline: LG integrates Microsoft Copilot into smart TV operating system via mandatory update
+source_url: https://example.com/press/lg-smart-tv-copilot
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+LG Electronics today announced a firmware update across its 2025 and 2026 smart TV lineups that integrates Microsoft Copilot directly into the webOS home interface.
+
+The update installs an persistent Copilot widget on the main dashboard, enabling voice-driven content recommendations, real-time query handling, and screen context analysis. LG confirmed that the system app is pre-installed as part of the core operating system and cannot be uninstalled or removed from the main navigation bar, though users can disable voice activation in the system settings menu.
+
+"Bringing conversational AI directly to the living room display creates a unified hub for entertainment and home productivity," said an LG product VP.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_005
+company: American Eagle Outfitters
+sector: retail
+date: 2025-12-18
+headline: American Eagle launches 'Bad Genes' marketing campaign featuring Sydney Sweeney
+source_url: https://example.com/press/american-eagle-bad-genes
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+American Eagle Outfitters today launched its national holiday denim campaign, titled "Bad Genes," featuring actress Sydney Sweeney. 
+
+The campaign centers on a play on words between denim "jeans" and biological "genes," featuring slogans such as "Good Genes, Great Jeans" across billboards, social channels, and in-store displays. The retailer stated the messaging celebrates confidence, personal heritage, and timeless fit.
+
+Initial campaign metrics indicated a 34% increase in foot traffic across flagship retail locations during the opening weekend of the promotion.
+--- PRIOR STATEMENTS ---
+2024-05-10, ESG and inclusion report: "We build campaigns that celebrate body diversity, inclusivity, and individuality, explicitly moving away from genetic perfectionism or exclusive beauty standards."
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_006
+company: Astronomer
+sector: enterprise_software
+date: 2025-12-21
+headline: Astronomer issues executive leadership statement following concert video incident
+source_url: https://example.com/press/astronomer-leadership-statement
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Astronomer Inc., the commercial developer behind Apache Airflow, today issued a statement regarding public inquiries surrounding executive conduct at a recent public event.
+
+The company confirmed that its board of directors has initiated an internal governance review into executive workplace conduct guidelines following widely circulated video footage from a public concert. The company announced that Gwyneth Paltrow's consulting agency has been retained to assist with executive communications and corporate messaging during the review period.
+
+"Astronomer remains focused on delivering enterprise data orchestration for our customers while our board completes its review," the company stated.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_007
+company: Social Security Administration
+sector: government
+date: 2025-12-28
+headline: Social Security Administration shifts annual COLA notices to digital-first portal
+source_url: https://www.ssa.gov/news/press/releases/2025-cola-digital-shift
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+The Social Security Administration (SSA) today announced that annual Cost-of-Living Adjustment (COLA) notices will be delivered digitally through the "my Social Security" online portal starting this season.
+
+Beneficiaries who have registered online accounts will receive instant portal notifications rather than paper mailings, reducing administrative processing costs and delivery timelines. Paper notices will continue to be mailed to beneficiaries who have not set up digital accounts or who have explicitly requested paper communications.
+
+The SSA reminded beneficiaries that official notices will never ask for credentials or financial details via email or SMS links.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_008
+company: IonQ
+sector: quantum_computing
+date: 2026-01-15
+headline: IonQ enters definitive agreement to acquire semiconductor fabricator SkyWater Technology
+source_url: https://example.com/press/ionq-acquires-skywater
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+IonQ, a leader in quantum computing, today announced a definitive agreement to acquire semiconductor foundry operator SkyWater Technology in a stock-and-cash transaction valued at approximately $1.8 billion.
+
+The acquisition secures IonQ's domestic supply chain for custom quantum processing units (QPUs) and ion-trap chip fabrication. SkyWater will continue to operate its existing foundry services for aerospace, defense, and commercial semiconductor customers as a subsidiary within IonQ's hardware division.
+
+The transaction is expected to close in the third quarter of 2026, subject to regulatory approvals and customary closing conditions.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_009
+company: xAI / Grok
+sector: social_media
+date: 2026-01-22
+headline: MP Jess Asato calls for platform accountability following Grok synthetic image target
+source_url: https://example.com/press/grok-synthetic-image-controversy
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+UK Member of Parliament Jess Asato issued a public demand today for enhanced safeguards on xAI's Grok image generator after malicious accounts used the tool to generate unconsented, defamatory synthetic images targeting her online.
+
+The incident sparked renewed legislative debates in the UK Parliament regarding platform liability for generative media tools that lack robust guardrails against non-consensual image generation involving public figures and private citizens.
+
+xAI stated that it is investigating the account activities and updating its automated safety classifiers to prevent abuse.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_010
+company: Beyond Fossil Fuels
+sector: non_profit
+date: 2026-02-17
+headline: Beyond Fossil Fuels releases report analyzing tech industry AI sustainability claims
+source_url: https://example.com/press/beyond-fossil-fuels-ai-report
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+Environmental advocacy organization Beyond Fossil Fuels today published a comprehensive research report evaluating the climate and energy claims made by major technology companies regarding AI data center expansion.
+
+The report analyzed public corporate sustainability reports from 25 leading technology firms and concluded that 74% of published statements claiming net-zero AI operations or grid-efficiency benefits lacked third-party verified emissions data or relied on unbundled energy attribute certificates.
+
+The report recommends standardized carbon reporting methodologies for high-density compute facilities across Europe and North America.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_011
+company: Target Corporation
+sector: retail
+date: 2026-02-20
+headline: Target adjusts corporate supplier diversity and internal inclusion program guidelines
+source_url: https://example.com/press/target-corporate-guidelines-update
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Target Corporation today announced updates to its corporate governance, supplier diversity guidelines, and internal employee resource group policies.
+
+Under the updated policy framework, supplier diversity targets will no longer use specific demographic quotas, shifting to broad economic development criteria. Internal diversity training modules will also be made optional rather than mandatory for corporate office personnel.
+
+Target stated the adjustments ensure compliance with evolving federal legal standards while maintaining commitment to broad customer appeal across all operational markets.
+--- PRIOR STATEMENTS ---
+2023-06-12, corporate statement: "Diversity, equity, and inclusion are core to our identity. We stand unequivocally committed to our permanent diversity goals and LGBTQ+ community partnerships."
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_012
+company: Kenvue
+sector: pharmaceuticals
+date: 2026-02-24
+headline: Kenvue defends Tylenol safety following federal press conference claims
+source_url: https://example.com/press/kenvue-tylenol-medical-safety
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Kenvue Inc. today issued a medical safety statement reaffirming the clinical safety profile of Tylenol (acetaminophen) following claims made during a joint federal press conference linking the medication to developmental conditions.
+
+Kenvue highlighted decades of peer-reviewed clinical research and consensus statements from major global health organizations, including the FDA, WHO, and the American College of Obstetricians and Gynecologists, confirming that acetaminophen remains safe when used as directed.
+
+"Independent medical science consistently refutes unsupported claims regarding acetaminophen safety," the company stated.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_013
+company: DeepSeek
+sector: artificial_intelligence
+date: 2026-02-25
+headline: DeepSeek releases R1 architecture claims claiming 300% efficiency gains
+source_url: https://example.com/press/deepseek-r1-efficiency-release
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+AI research firm DeepSeek today published technical documentation and model weights for its R1 reasoning model architecture, claiming efficiency gains of 30% to 400% over traditional dense transformer models without requiring additional compute infrastructure.
+
+The release announcement stated that open-weights reasoning capabilities can match proprietary frontier systems at a fraction of training and inference costs. 
+
+Following the publication, global financial markets saw significant volatility, with tech software and hardware indices experiencing single-day declines amid shifting cost expectations for AI infrastructure.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_014
+company: OpenAI
+sector: artificial_intelligence
+date: 2026-02-27
+headline: OpenAI publishes technical analysis alleging model distillation by competitor labs
+source_url: https://example.com/press/openai-distillation-analysis
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+OpenAI today published a technical blog post and research paper detailing pattern analysis on API traffic that indicates systematic model distillation by foreign competitor AI laboratories.
+
+The research outlines statistical signatures in output queries that suggest lower-cost reasoning models were trained on outputs generated from frontier models in violation of API Terms of Service. OpenAI stated it has implemented enhanced rate-limiting and synthetic output watermarking to protect proprietary training signals.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_015
+company: OpenAI
+sector: artificial_intelligence
+date: 2026-03-05
+headline: OpenAI modifies usage policies to permit classified defense and military deployments
+source_url: https://example.com/press/openai-defense-policy-update
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+OpenAI today announced updates to its enterprise terms and usage policies, explicitly allowing its AI models to be deployed in classified U.S. Department of Defense and national security operations.
+
+The policy change accompanies a new contract with the Pentagon for strategic analysis, cyber defense, and administrative workflows. CEO Sam Altman stated the deployment adheres to core safety principles while supporting national security imperatives.
+
+Following the announcement, digital user advocacy groups launched a public campaign encouraging users to cancel subscriptions under the hashtag #QuitGPT.
+--- PRIOR STATEMENTS ---
+2023-01-20, usage policy: "We strictly prohibit the use of our models, API, or software for military and warfare applications, weapons development, or harm to individuals."
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_016
+company: Anthropic
+sector: artificial_intelligence
+date: 2026-03-12
+headline: Anthropic clarifies stance on defense deployment constraints following government inquiries
+source_url: https://example.com/press/anthropic-defense-deployment-statement
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+Anthropic today issued a corporate position paper regarding the application of its Claude AI models in government and defense settings following public discussion regarding military deployments in foreign operational theaters.
+
+The company reiterated that while it supports non-combat administrative and logistical defense applications, its Responsible Scaling Policy strictly prohibits the integration of Claude into autonomous weapons systems or real-time tactical kinetic strike targeting.
+
+"Clear boundaries between defense logistics and autonomous tactical decision-making are necessary to maintain AI safety," the statement read.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_017
+company: OpenAI
+sector: artificial_intelligence
+date: 2026-04-02
+headline: OpenAI issues statement following physical security incident at executive residence
+source_url: https://example.com/press/openai-security-statement
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+OpenAI today confirmed that law enforcement responded to a physical security incident involving an incendiary device thrown at a residential property associated with executive leadership in San Francisco.
+
+Local authorities arrived on scene immediately; no injuries were reported, and physical damage to the property was minor. OpenAI stated it is fully cooperating with local and federal law enforcement agencies in their ongoing investigation and has heightened security protocols across all executive operations.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_018
+company: PwC
+sector: professional_services
+date: 2026-04-13
+headline: PwC report finds 74% of enterprise AI economic value concentrated in top 20% of firms
+source_url: https://example.com/press/pwc-ai-value-concentration-report
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+PricewaterhouseCoopers (PwC) today published its 2026 Global AI Productivity Index, analyzing enterprise deployment outcomes across 2,000 international organizations.
+
+The study revealed a growing value divergence: 74% of total economic returns generated by generative AI tools are currently captured by top-performing companies representing just 20% of the surveyed base. The report highlights that organizational restructuring and workflow integration—rather than raw model selection—are the primary drivers of ROI.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_019
+company: Chaotic Good
+sector: marketing_technology
+date: 2026-04-20
+headline: Industry investigation reveals synthetic network operation by marketing agency Chaotic Good
+source_url: https://example.com/press/chaotic-good-investigation
+expected_null: false
+---
+FOR IMMEDIATE RELEASE
+
+An independent digital forensics investigation published today revealed that marketing agency Chaotic Good operated an undisclosed network of over 10,000 synthetic AI-driven social accounts to manipulate brand discussions for corporate clients.
+
+The network utilized coordinated persona agents to generate organic-seeming product endorsements, suppress negative comments, and simulate grassroots consumer enthusiasm across social platforms. Industry groups have called for FTC intervention regarding deceptive advertising practices and un-disclosed synthetic astroturfing.
+=== END EVENT ===
+
+=== EVENT ===
+id: evt_020
+company: AnswerConnect
+sector: telecommunications
+date: 2026-05-13
+headline: AnswerConnect publishes global study on consumer frustration with AI customer service
+source_url: https://example.com/press/answerconnect-ai-trust-study
+expected_null: true
+---
+FOR IMMEDIATE RELEASE
+
+Customer support provider AnswerConnect today released the results of a 6,000-person study evaluating consumer attitudes toward automated AI customer service representatives across the U.S., UK, and Canada.
+
+The report found that 82% of respondents experienced increased frustration when unable to reach a human representative, with 68% reporting a decline in overall trust toward brands that deploy mandatory AI chatbots for service resolution. The company advocated for a hybrid human-in-the-loop support model.
+=== END EVENT ===
