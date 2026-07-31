@@ -8,6 +8,7 @@ the entire cache on any quote-set change.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import math
@@ -44,6 +45,7 @@ class EmbeddingClient(ABC):
             cache_dir.mkdir(parents=True, exist_ok=True)
         self.calls_made = 0
         self.cache_hits = 0
+        self._semaphore = asyncio.Semaphore(concurrency)
 
     @abstractmethod
     async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
@@ -86,7 +88,8 @@ class EmbeddingClient(ABC):
 
         if misses:
             self.calls_made += 1
-            fresh = await self._raw([t for _, t in misses], model=model, input_type=input_type)
+            async with self._semaphore:
+                fresh = await self._raw([t for _, t in misses], model=model, input_type=input_type)
             if len(fresh) != len(misses):
                 raise EmbeddingError(f"expected {len(misses)} embedding(s), got {len(fresh)}")
             for (i, text), embedding in zip(misses, fresh):

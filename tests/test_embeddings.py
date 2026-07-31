@@ -80,3 +80,37 @@ def test_voyage_client_raises_without_api_key(monkeypatch, tmp_path):
 
     with pytest.raises(EmbeddingError, match="VOYAGE_API_KEY"):
         VoyageEmbeddingClient()
+
+
+def test_embedding_client_applies_concurrency_limit():
+    """Verify that concurrency parameter actually throttles concurrent _raw() calls."""
+    concurrency_state = {"in_flight": 0, "max_observed": 0}
+
+    class ConcurrencyTrackingClient(FakeEmbeddingClient):
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            concurrency_state["in_flight"] += 1
+            concurrency_state["max_observed"] = max(
+                concurrency_state["max_observed"], concurrency_state["in_flight"]
+            )
+
+            # Yield control to allow concurrent tasks to interleave
+            await asyncio.sleep(0)
+
+            concurrency_state["in_flight"] -= 1
+            return await super()._raw(texts, model=model, input_type=input_type)
+
+    client = ConcurrencyTrackingClient(lambda text: [1.0], concurrency=1)
+
+    async def run_test():
+        # Each embed() call below is a cache miss for a distinct text, so each
+        # triggers its own _raw() call -- with concurrency=1 only one may run
+        # at a time despite being launched concurrently via gather.
+        await asyncio.gather(
+            client.embed(["text1"], model="m"),
+            client.embed(["text2"], model="m"),
+            client.embed(["text3"], model="m"),
+        )
+
+    asyncio.run(run_test())
+
+    assert concurrency_state["max_observed"] == 1
