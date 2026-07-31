@@ -4,8 +4,12 @@ import pytest
 
 from src.diagnostics_metrics import (
     distribution_match_partial,
+    homogeneity,
+    redundancy,
     register_variance,
+    span_dispersion,
     specificity,
+    stability,
 )
 
 
@@ -90,3 +94,117 @@ def test_distribution_match_both_empty():
     result = distribution_match_partial({}, {})
     assert result.total_variation_distance is None
     assert result.categories_compared == 0
+
+
+# --- homogeneity ---
+
+
+def test_homogeneity_mean_pairwise_cosine():
+    embeddings = [[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
+    result = homogeneity(embeddings)
+    # pairs: (0,1)=1.0, (0,2)=0.0, (1,2)=0.0 -> mean 1/3
+    assert result.mean_pairwise_cosine == pytest.approx(1 / 3)
+    assert result.n_quotes == 3
+    assert result.n_pairs == 3
+
+
+def test_homogeneity_rejects_fewer_than_two():
+    with pytest.raises(ValueError, match="at least 2"):
+        homogeneity([[1.0, 0.0]])
+
+
+# --- redundancy ---
+
+
+def test_redundancy_fewer_than_min_cluster_size_returns_one_cluster_per_point():
+    result = redundancy([[1.0, 0.0]], n_reacting_personas=1, min_cluster_size=2)
+    assert result.n_clusters == 1
+    assert result.ratio == pytest.approx(1.0)
+    assert result.n_noise == 0
+
+
+def test_redundancy_finds_well_separated_clusters():
+    embeddings = [
+        [1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.01],
+        [0.0, 1.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.01],
+        [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.01],
+    ]
+    result = redundancy(embeddings, n_reacting_personas=6, min_cluster_size=2)
+    assert result.n_clusters == 3
+    assert result.n_noise == 0
+    assert result.ratio == pytest.approx(0.5)
+
+
+# --- span_dispersion ---
+
+
+def test_span_dispersion_all_same_span_has_zero_stdev():
+    result = span_dispersion([(0, 10), (0, 10), (0, 10)], announcement_len=100)
+    assert result.normalized_position_stdev == pytest.approx(0.0)
+    assert result.distinct_span_fraction == pytest.approx(1 / 3)
+
+
+def test_span_dispersion_spread_across_document():
+    result = span_dispersion([(0, 10), (45, 55), (90, 100)], announcement_len=100)
+    # midpoints normalized: 0.05, 0.50, 0.95 -> rounded*1000: 50, 500, 950
+    # stdev([50, 500, 950]) = 450.0 -> normalized_position_stdev = 0.45
+    assert result.normalized_position_stdev == pytest.approx(0.45)
+    assert result.distinct_span_fraction == pytest.approx(1.0)
+
+
+def test_span_dispersion_rejects_empty_citations():
+    with pytest.raises(ValueError, match="no citations"):
+        span_dispersion([], announcement_len=100)
+
+
+def test_span_dispersion_rejects_nonpositive_length():
+    with pytest.raises(ValueError, match="announcement_len"):
+        span_dispersion([(0, 10)], announcement_len=0)
+
+
+# --- stability ---
+
+
+def test_stability_perfect_agreement():
+    samples = {("001", "evt_001"): [("criticize", frozenset({"privacy"}))] * 5}
+    result = stability(samples)
+    assert result.category_agreement_rate == pytest.approx(1.0)
+    assert result.n_pairs_sampled == 1
+    assert result.n_reruns == 5
+
+
+def test_stability_disagreement_lowers_rate():
+    samples = {
+        ("001", "evt_001"): [
+            ("criticize", frozenset({"privacy"})),
+            ("ignore", frozenset()),
+            ("criticize", frozenset({"privacy"})),
+            ("criticize", frozenset({"privacy"})),
+            ("criticize", frozenset({"privacy"})),
+        ]
+    }
+    result = stability(samples)
+    assert result.category_agreement_rate == pytest.approx(0.0)
+
+
+def test_stability_mixed_pairs():
+    samples = {
+        ("001", "evt_001"): [("criticize", frozenset({"privacy"}))] * 5,
+        ("002", "evt_002"): [("ignore", frozenset())] * 4 + [("criticize", frozenset({"labor"}))],
+    }
+    result = stability(samples)
+    assert result.category_agreement_rate == pytest.approx(0.5)
+
+
+def test_stability_rejects_empty_samples():
+    with pytest.raises(ValueError, match="no samples"):
+        stability({})
+
+
+def test_stability_rejects_mismatched_rerun_counts():
+    samples = {
+        ("001", "evt_001"): [("criticize", frozenset({"privacy"}))] * 5,
+        ("002", "evt_002"): [("ignore", frozenset())] * 3,
+    }
+    with pytest.raises(ValueError, match="same rerun count"):
+        stability(samples)

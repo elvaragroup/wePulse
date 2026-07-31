@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from src.embeddings import cosine_similarity
+
 _SENTENCE_SPLIT = re.compile(r"[.!?]+(?:\s|$)")
 _EM_DASH = "—"
 
@@ -111,4 +113,126 @@ def distribution_match_partial(
     tvd = 0.5 * sum(abs(simulated_mix.get(c, 0.0) - ground_truth_mix.get(c, 0.0)) for c in categories)
     return DistributionMatchResult(
         status="measured_partial", total_variation_distance=tvd, categories_compared=len(categories)
+    )
+
+
+@dataclass(frozen=True)
+class HomogeneityResult:
+    mean_pairwise_cosine: float
+    n_quotes: int
+    n_pairs: int
+
+
+def homogeneity(embeddings: list[list[float]]) -> HomogeneityResult:
+    """Mean pairwise cosine similarity across every non-ignore quote's
+    embedding. High similarity means many personas are one voice wearing
+    different subject-matter vocabulary."""
+    n = len(embeddings)
+    if n < 2:
+        raise ValueError("need at least 2 embeddings to compute pairwise similarity")
+
+    total = 0.0
+    n_pairs = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            total += cosine_similarity(embeddings[i], embeddings[j])
+            n_pairs += 1
+
+    return HomogeneityResult(mean_pairwise_cosine=total / n_pairs, n_quotes=n, n_pairs=n_pairs)
+
+
+def _cosine_distance_matrix(embeddings: list[list[float]]):
+    import numpy as np
+
+    matrix = np.array(embeddings, dtype=float)
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    normalized = matrix / norms
+    similarity = normalized @ normalized.T
+    distance = 1.0 - similarity
+    return np.clip(distance, 0.0, 2.0)
+
+
+@dataclass(frozen=True)
+class RedundancyResult:
+    n_clusters: int
+    n_reacting_personas: int
+    ratio: float  # n_clusters / n_reacting_personas; low ratio = collapse
+    n_noise: int
+
+
+def redundancy(
+    embeddings: list[list[float]], *, n_reacting_personas: int, min_cluster_size: int = 2
+) -> RedundancyResult:
+    """Cluster persona-reaction embeddings; compare cluster count to the
+    number of reacting personas. clusters << personas means many personas
+    land in the same handful of semantic clusters -- collapse."""
+    from sklearn.cluster import HDBSCAN
+
+    if len(embeddings) < min_cluster_size:
+        return RedundancyResult(
+            n_clusters=len(embeddings), n_reacting_personas=n_reacting_personas, ratio=1.0, n_noise=0
+        )
+
+    distance_matrix = _cosine_distance_matrix(embeddings)
+    labels = HDBSCAN(min_cluster_size=min_cluster_size, metric="precomputed").fit_predict(distance_matrix)
+    n_noise = int((labels == -1).sum())
+    n_clusters = len(set(labels)) - (1 if n_noise else 0)
+
+    return RedundancyResult(
+        n_clusters=n_clusters,
+        n_reacting_personas=n_reacting_personas,
+        ratio=n_clusters / n_reacting_personas if n_reacting_personas else 0.0,
+        n_noise=n_noise,
+    )
+
+
+@dataclass(frozen=True)
+class SpanDispersionResult:
+    normalized_position_stdev: float
+    distinct_span_fraction: float
+
+
+def span_dispersion(citations: list[tuple[int, int]], announcement_len: int) -> SpanDispersionResult:
+    """How spread out cited (char_start, char_end) spans are across the
+    document. All personas citing one span -> normalized_position_stdev near
+    0. Only meaningful once span-grounded citations exist (a future
+    Milestone B); v1 runs have no spans, so src/diagnostics.py passes None
+    instead of calling this for them."""
+    if not citations:
+        raise ValueError("no citations to compute span dispersion over")
+    if announcement_len <= 0:
+        raise ValueError("announcement_len must be positive")
+
+    midpoints = [((start + end) / 2) / announcement_len for start, end in citations]
+    distinct = len({(start, end) for start, end in citations})
+
+    return SpanDispersionResult(
+        normalized_position_stdev=_stdev([round(m * 1000) for m in midpoints]) / 1000,
+        distinct_span_fraction=distinct / len(citations),
+    )
+
+
+@dataclass(frozen=True)
+class StabilityResult:
+    n_pairs_sampled: int
+    n_reruns: int
+    category_agreement_rate: float
+
+
+def stability(samples: dict[tuple[str, str], list[tuple[str, frozenset]]]) -> StabilityResult:
+    """samples maps (persona_id, event_id) -> list of (reaction, category_set)
+    tuples, one per rerun. A pair 'agrees' iff every rerun produced the exact
+    same tuple. Only computes agreement over already-collected reruns --
+    src/diagnostics.py owns making the repeated LLM calls."""
+    if not samples:
+        raise ValueError("no samples to compute stability over")
+
+    n_reruns_seen = {len(v) for v in samples.values()}
+    if len(n_reruns_seen) != 1:
+        raise ValueError(f"all sampled pairs must have the same rerun count, got {sorted(n_reruns_seen)}")
+    n_reruns = n_reruns_seen.pop()
+
+    agreements = sum(1 for reruns in samples.values() if len(set(reruns)) == 1)
+    return StabilityResult(
+        n_pairs_sampled=len(samples), n_reruns=n_reruns, category_agreement_rate=agreements / len(samples)
     )
