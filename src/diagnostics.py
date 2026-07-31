@@ -6,7 +6,9 @@ docs/superpowers/plans/2026-07-30-diagnostics-milestone-a.md.
 
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -319,3 +321,95 @@ def write_report(report: DiagnosticsReport, run_dir: Path) -> None:
     lines.append("Span dispersion: not measured (v1 runs have no span citations)")
 
     (run_dir / "diagnostics_report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def load_baseline(repo: Path) -> dict | None:
+    path = repo / "results" / "diagnostics_baseline.json"
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_baseline(report: DiagnosticsReport, repo: Path) -> None:
+    path = repo / "results" / "diagnostics_baseline.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report.to_json_dict(), indent=2) + "\n", encoding="utf-8")
+
+
+def compare_to_baseline(report: DiagnosticsReport, baseline: dict) -> str:
+    lines = [f"Comparison against results/diagnostics_baseline.json (run {baseline['run_id']}):", ""]
+    lines.append(
+        f"Homogeneity: {report.homogeneity.mean_pairwise_cosine:.4f} vs "
+        f"baseline {baseline['homogeneity']['mean_pairwise_cosine']:.4f}"
+    )
+    lines.append(
+        f"Redundancy ratio: {report.redundancy.ratio:.3f} vs baseline {baseline['redundancy']['ratio']:.3f}"
+    )
+    lines.append(
+        f"Specificity false_positive_rate: {report.specificity.false_positive_rate:.2%} vs "
+        f"baseline {baseline['specificity']['false_positive_rate']:.2%}"
+    )
+    lines.append(
+        f"Register variance word_count_stdev: {report.register_variance.word_count_stdev:.2f} vs "
+        f"baseline {baseline['register_variance']['word_count_stdev']:.2f}"
+    )
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    import asyncio
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run", required=True, dest="run_id")
+    parser.add_argument("--write-baseline", action="store_true")
+    parser.add_argument("--compare-baseline", action="store_true")
+    parser.add_argument("--stability-sample", type=int, default=DEFAULT_STABILITY_SAMPLE)
+    parser.add_argument("--skip-stability", action="store_true", help="skip the extra LLM calls Stability needs")
+    args = parser.parse_args(argv)
+
+    async def _run() -> DiagnosticsReport:
+        from src.embeddings import VoyageEmbeddingClient
+        from src.llm import AnthropicLLMClient
+
+        run_dir = REPO / "runs" / args.run_id
+        embedding_client = VoyageEmbeddingClient(cache_dir=run_dir / "cache" / "embeddings")
+        llm_client = None if args.skip_stability else AnthropicLLMClient(cache_dir=run_dir / "cache")
+        try:
+            return await run_diagnostics(
+                run_id=args.run_id, embedding_client=embedding_client, llm_client=llm_client,
+                stability_sample=args.stability_sample,
+            )
+        finally:
+            if llm_client is not None:
+                await llm_client.aclose()
+
+    try:
+        report = asyncio.run(_run())
+    except DiagnosticsError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    run_dir = REPO / "runs" / args.run_id
+    write_report(report, run_dir)
+    print((run_dir / "diagnostics_report.txt").read_text(encoding="utf-8"))
+
+    if args.write_baseline:
+        write_baseline(report, REPO)
+        print("\nwrote baseline to results/diagnostics_baseline.json")
+
+    if args.compare_baseline:
+        baseline = load_baseline(REPO)
+        if baseline is None:
+            print(
+                "\nerror: no baseline at results/diagnostics_baseline.json -- run --write-baseline first",
+                file=sys.stderr,
+            )
+            return 1
+        print()
+        print(compare_to_baseline(report, baseline))
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

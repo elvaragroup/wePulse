@@ -206,3 +206,35 @@ def test_write_report_creates_json_and_txt(diagnostics_sandbox, tmp_path):
     text = (run_dir / "diagnostics_report.txt").read_text(encoding="utf-8")
     assert "Homogeneity" in text
     assert "Stability: not measured" in text
+
+
+from src.diagnostics import compare_to_baseline, load_baseline, main, write_baseline
+
+
+def test_load_baseline_returns_none_when_absent(tmp_path):
+    assert load_baseline(tmp_path) is None
+
+
+def test_write_and_load_baseline_round_trips(diagnostics_sandbox):
+    embedding_client = FakeEmbeddingClient(fake_embedding_responder)
+    report = asyncio.run(
+        run_diagnostics(repo=diagnostics_sandbox, run_id="run_001", embedding_client=embedding_client)
+    )
+    write_baseline(report, diagnostics_sandbox)
+    baseline = load_baseline(diagnostics_sandbox)
+    assert baseline is not None
+    assert baseline["run_id"] == "run_001"
+    assert (diagnostics_sandbox / "results" / "diagnostics_baseline.json").exists()
+
+
+def test_compare_to_baseline_mentions_both_numbers(diagnostics_sandbox):
+    embedding_client = FakeEmbeddingClient(fake_embedding_responder)
+    report = asyncio.run(
+        run_diagnostics(repo=diagnostics_sandbox, run_id="run_001", embedding_client=embedding_client)
+    )
+    write_baseline(report, diagnostics_sandbox)
+    baseline = load_baseline(diagnostics_sandbox)
+    text = compare_to_baseline(report, baseline)
+    assert "run_001" in text
+    assert "Homogeneity" in text
+    assert "Redundancy" in text
