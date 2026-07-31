@@ -123,6 +123,14 @@ def test_redundancy_fewer_than_min_cluster_size_returns_one_cluster_per_point():
     assert result.n_noise == 0
 
 
+def test_redundancy_fewer_than_min_cluster_size_computes_real_ratio():
+    # Test case where len(embeddings) != n_reacting_personas in the fallback branch
+    result = redundancy([[1.0, 0.0]], n_reacting_personas=2, min_cluster_size=2)
+    assert result.n_clusters == 1
+    assert result.ratio == pytest.approx(0.5)  # 1 embedding / 2 personas
+    assert result.n_noise == 0
+
+
 def test_redundancy_finds_well_separated_clusters():
     embeddings = [
         [1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.01],

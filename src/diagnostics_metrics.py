@@ -170,7 +170,7 @@ def redundancy(
 
     if len(embeddings) < min_cluster_size:
         return RedundancyResult(
-            n_clusters=len(embeddings), n_reacting_personas=n_reacting_personas, ratio=1.0, n_noise=0
+            n_clusters=len(embeddings), n_reacting_personas=n_reacting_personas, ratio=len(embeddings) / n_reacting_personas if n_reacting_personas else 0.0, n_noise=0
         )
 
     distance_matrix = _cosine_distance_matrix(embeddings)
