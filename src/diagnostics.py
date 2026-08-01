@@ -380,6 +380,7 @@ def main(argv: list[str] | None = None) -> int:
                 stability_sample=args.stability_sample,
             )
         finally:
+            await embedding_client.aclose()
             if llm_client is not None:
                 await llm_client.aclose()
 
