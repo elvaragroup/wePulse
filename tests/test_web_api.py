@@ -44,5 +44,10 @@ def test_root_serves_frontend():
 def test_api_routes_not_shadowed_by_static_mount():
     # Regression test for route/mount declaration order: /api/events must
     # resolve to the API handler, never fall through to the static mount.
+    # If the mount were declared before the route, /api/events would return 404
+    # from StaticFiles rather than 200 with the real events list.
     response = client.get("/api/events")
-    assert response.headers["content-type"].startswith("application/json")
+    assert response.status_code == 200
+    body = response.json()
+    assert "events" in body
+    assert len(body["events"]) == 23
