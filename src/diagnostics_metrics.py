@@ -126,7 +126,13 @@ class HomogeneityResult:
 def homogeneity(embeddings: list[list[float]]) -> HomogeneityResult:
     """Mean pairwise cosine similarity across every non-ignore quote's
     embedding. High similarity means many personas are one voice wearing
-    different subject-matter vocabulary."""
+    different subject-matter vocabulary.
+
+    Caveat: when called on a whole-run's pooled quotes spanning multiple
+    events (as src/diagnostics.py's run_diagnostics does), this number
+    blends cross-event topical (dis)similarity with within-topic
+    voice-similarity -- a low value could reflect genuine topic diversity
+    across events rather than genuine voice diversity within a topic."""
     n = len(embeddings)
     if n < 2:
         raise ValueError("need at least 2 embeddings to compute pairwise similarity")
@@ -165,12 +171,21 @@ def redundancy(
 ) -> RedundancyResult:
     """Cluster persona-reaction embeddings; compare cluster count to the
     number of reacting personas. clusters << personas means many personas
-    land in the same handful of semantic clusters -- collapse."""
+    land in the same handful of semantic clusters -- collapse.
+
+    Caveat: when called on a whole-run's pooled quotes spanning multiple
+    events (as src/diagnostics.py's run_diagnostics does), a high
+    ratio could reflect genuine topic diversity across events rather than
+    genuine voice diversity within a topic, and vice versa."""
     from sklearn.cluster import HDBSCAN
 
     if len(embeddings) < min_cluster_size:
+        ratio = len(embeddings) / n_reacting_personas if n_reacting_personas else 0.0
         return RedundancyResult(
-            n_clusters=len(embeddings), n_reacting_personas=n_reacting_personas, ratio=len(embeddings) / n_reacting_personas if n_reacting_personas else 0.0, n_noise=0
+            n_clusters=len(embeddings),
+            n_reacting_personas=n_reacting_personas,
+            ratio=ratio,
+            n_noise=0,
         )
 
     distance_matrix = _cosine_distance_matrix(embeddings)

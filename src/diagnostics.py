@@ -12,6 +12,8 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from src.embeddings import EmbeddingClient, EmbeddingError
+from src.llm import LLMClient
 from src.personas import Persona
 
 REPO = Path(__file__).resolve().parent.parent
@@ -129,10 +131,12 @@ class DiagnosticsReport:
             "register_variance": asdict(self.register_variance),
             "homogeneity": asdict(self.homogeneity),
             "redundancy": asdict(self.redundancy),
-            "span_dispersion": asdict(self.span_dispersion) if self.span_dispersion else None,
-            "stability": asdict(self.stability) if self.stability else None,
+            "span_dispersion": asdict(self.span_dispersion) if self.span_dispersion is not None else None,
+            "stability": asdict(self.stability) if self.stability is not None else None,
             "specificity": asdict(self.specificity),
-            "distribution_match": asdict(self.distribution_match) if self.distribution_match else None,
+            "distribution_match": (
+                asdict(self.distribution_match) if self.distribution_match is not None else None
+            ),
         }
 
 
@@ -141,9 +145,10 @@ def _backlash_predicted_by_event(repo: Path, run_id: str, event_ids: set[str]) -
     result: dict[str, bool] = {}
     for event_id in event_ids:
         path = predictions_dir / f"{event_id}__B30.json"
-        if path.exists():
-            data = json.loads(path.read_text(encoding="utf-8"))
-            result[event_id] = bool(data["backlash_predicted"])
+        if not path.exists():
+            raise DiagnosticsError(f"missing prediction file for event {event_id!r}: {path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        result[event_id] = bool(data["backlash_predicted"])
     return result
 
 
@@ -223,8 +228,8 @@ async def run_diagnostics(
     *,
     repo: Path = REPO,
     run_id: str,
-    embedding_client,
-    llm_client=None,
+    embedding_client: EmbeddingClient,
+    llm_client: LLMClient | None = None,
     stability_sample: int = DEFAULT_STABILITY_SAMPLE,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
 ) -> DiagnosticsReport:
@@ -300,6 +305,8 @@ def write_report(report: DiagnosticsReport, run_dir: Path) -> None:
         f"Redundancy: {report.redundancy.n_clusters} clusters / "
         f"{report.redundancy.n_reacting_personas} reacting personas "
         f"(ratio={report.redundancy.ratio:.3f}, noise={report.redundancy.n_noise})",
+        "(Homogeneity/Redundancy are computed over quotes pooled across all of this run's "
+        "events -- see src/diagnostics_metrics.py docstrings for the topic-vs-voice caveat.)",
         f"Specificity: false_positive_rate={report.specificity.false_positive_rate:.2%} "
         f"({report.specificity.n_false_positive}/{report.specificity.n_null_events} null events)",
     ]
@@ -367,11 +374,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-stability", action="store_true", help="skip the extra LLM calls Stability needs")
     args = parser.parse_args(argv)
 
+    run_dir = REPO / "runs" / args.run_id
+
     async def _run() -> DiagnosticsReport:
         from src.embeddings import VoyageEmbeddingClient
         from src.llm import AnthropicLLMClient
 
-        run_dir = REPO / "runs" / args.run_id
+        if not run_dir.exists():
+            raise DiagnosticsError(f"no run at {run_dir}")
+
         embedding_client = VoyageEmbeddingClient(cache_dir=run_dir / "cache" / "embeddings")
         llm_client = None if args.skip_stability else AnthropicLLMClient(cache_dir=run_dir / "cache")
         try:
@@ -386,11 +397,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         report = asyncio.run(_run())
-    except DiagnosticsError as exc:
+    except (DiagnosticsError, EmbeddingError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    run_dir = REPO / "runs" / args.run_id
     write_report(report, run_dir)
     print((run_dir / "diagnostics_report.txt").read_text(encoding="utf-8"))
 

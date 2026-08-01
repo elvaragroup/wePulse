@@ -174,6 +174,41 @@ def test_run_diagnostics_raises_without_manifest_dir(diagnostics_sandbox):
         )
 
 
+def test_run_diagnostics_raises_on_missing_prediction_file(tmp_path, repo):
+    """A missing runs/<id>/predictions/<event_id>__B30.json must fail loudly,
+    not be silently treated as 'no backlash predicted' -- see
+    _backlash_predicted_by_event's docstring/CLAUDE.md fail-loudly convention
+    (same reasoning as load_v1_rows refusing unknown personas)."""
+    root = tmp_path / "crisis-sim-missing-pred"
+    root.mkdir()
+    shutil.copytree(repo / "personas", root / "personas")
+    shutil.copy(repo / "config.yaml", root / "config.yaml")
+    shutil.copy(repo / "taxonomy.txt", root / "taxonomy.txt")
+    (root / "inputs").mkdir()
+    (root / "inputs" / "events.txt").write_text(EVENTS_TEXT, encoding="utf-8")
+
+    run_dir = root / "runs" / "run_001"
+    write_reaction(
+        run_dir / "raw" / "B30" / "evt_001" / "001.json",
+        reaction="criticize", categories=["privacy"], intensity=0.8,
+        quote="This is a real complaint about defaults.",
+    )
+    write_reaction(
+        run_dir / "raw" / "B30" / "evt_001" / "002.json",
+        reaction="mild_concern", categories=["overclaim"], intensity=0.5,
+        quote="Slightly overstated marketing copy here.",
+    )
+    write_reaction(run_dir / "raw" / "B30" / "evt_002" / "001.json")
+    # Only evt_001's prediction file is written; evt_002's is missing entirely.
+    write_prediction(run_dir / "predictions" / "evt_001__B30.json", event_id="evt_001", backlash_predicted=True)
+
+    embedding_client = FakeEmbeddingClient(fake_embedding_responder)
+    with pytest.raises(DiagnosticsError, match="missing prediction file"):
+        asyncio.run(
+            run_diagnostics(repo=root, run_id="run_001", embedding_client=embedding_client)
+        )
+
+
 def test_run_diagnostics_runs_stability_when_llm_client_given(diagnostics_sandbox):
     embedding_client = FakeEmbeddingClient(fake_embedding_responder)
 
@@ -206,9 +241,10 @@ def test_write_report_creates_json_and_txt(diagnostics_sandbox, tmp_path):
     text = (run_dir / "diagnostics_report.txt").read_text(encoding="utf-8")
     assert "Homogeneity" in text
     assert "Stability: not measured" in text
+    assert "pooled across all of this run's events" in text
 
 
-from src.diagnostics import compare_to_baseline, load_baseline, main, write_baseline
+from src.diagnostics import compare_to_baseline, load_baseline, write_baseline
 
 
 def test_load_baseline_returns_none_when_absent(tmp_path):

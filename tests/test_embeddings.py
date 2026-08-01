@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
+import httpx
 import pytest
 
 from src.embeddings import EmbeddingError, FakeEmbeddingClient, cosine_similarity
@@ -114,3 +115,121 @@ def test_embedding_client_applies_concurrency_limit():
     asyncio.run(run_test())
 
     assert concurrency_state["max_observed"] == 1
+
+
+# --- batching ---
+
+
+def test_embed_chunks_misses_into_batch_size_groups():
+    """~144 texts in one request has no size limit protection today -- misses
+    must be chunked into at most batch_size per _raw() call, with each
+    chunk's results cached immediately (so an unrelated later chunk's
+    failure never loses earlier chunks' already-computed embeddings)."""
+    call_sizes: list[int] = []
+
+    class TrackingEmbeddingClient(FakeEmbeddingClient):
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            call_sizes.append(len(texts))
+            return await super()._raw(texts, model=model, input_type=input_type)
+
+    client = TrackingEmbeddingClient(lambda t: [float(len(t))], batch_size=2)
+    result = asyncio.run(client.embed([f"text{i}" for i in range(5)], model="m"))
+
+    assert call_sizes == [2, 2, 1]
+    assert result == [[float(len(f"text{i}"))] for i in range(5)]
+
+
+def test_embed_caches_each_batch_as_it_completes(tmp_path):
+    """Even mid-flight, a chunk that succeeds must be cached right away --
+    not held in memory until every chunk finishes."""
+    seen_chunks: list[list[str]] = []
+
+    class RecordingEmbeddingClient(FakeEmbeddingClient):
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            seen_chunks.append(list(texts))
+            return await super()._raw(texts, model=model, input_type=input_type)
+
+    client = RecordingEmbeddingClient(
+        lambda t: [float(len(t))], cache_dir=tmp_path / "cache", batch_size=1
+    )
+    asyncio.run(client.embed(["aa", "bbb"], model="m"))
+    assert seen_chunks == [["aa"], ["bbb"]]
+
+    # Both texts must now be cached individually, independent of one another.
+    second_call_client = RecordingEmbeddingClient(
+        lambda t: (_ for _ in ()).throw(AssertionError("should be served from cache")),
+        cache_dir=tmp_path / "cache",
+        batch_size=1,
+    )
+    result = asyncio.run(second_call_client.embed(["aa", "bbb"], model="m"))
+    assert result == [[2.0], [3.0]]
+    assert second_call_client.cache_hits == 2
+
+
+# --- retry with backoff ---
+
+
+def test_embed_retries_retryable_transport_error_then_succeeds():
+    state = {"failures": 2}
+
+    class FlakyEmbeddingClient(FakeEmbeddingClient):
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            if state["failures"]:
+                state["failures"] -= 1
+                raise httpx.ConnectError("boom")
+            return await super()._raw(texts, model=model, input_type=input_type)
+
+    client = FlakyEmbeddingClient(lambda t: [1.0], max_retries=3, backoff_base=0.001)
+    result = asyncio.run(client.embed(["x"], model="m"))
+    assert result == [[1.0]]
+
+
+def test_embed_retryable_http_status_error_retries():
+    request = httpx.Request("POST", "https://api.voyageai.com/v1/embeddings")
+
+    def make_error() -> httpx.HTTPStatusError:
+        response = httpx.Response(429, request=request)
+        return httpx.HTTPStatusError("rate limited", request=request, response=response)
+
+    state = {"failures": 1}
+
+    class FlakyEmbeddingClient(FakeEmbeddingClient):
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            if state["failures"]:
+                state["failures"] -= 1
+                raise make_error()
+            return await super()._raw(texts, model=model, input_type=input_type)
+
+    client = FlakyEmbeddingClient(lambda t: [1.0], max_retries=3, backoff_base=0.001)
+    result = asyncio.run(client.embed(["x"], model="m"))
+    assert result == [[1.0]]
+
+
+def test_embed_non_retryable_error_propagates_immediately():
+    class BadRequestEmbeddingClient(FakeEmbeddingClient):
+        calls = 0
+
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            type(self).calls += 1
+            request = httpx.Request("POST", "https://api.voyageai.com/v1/embeddings")
+            response = httpx.Response(400, request=request)
+            raise httpx.HTTPStatusError("bad request", request=request, response=response)
+
+    client = BadRequestEmbeddingClient(lambda t: [1.0], max_retries=3, backoff_base=0.001)
+    with pytest.raises(httpx.HTTPStatusError):
+        asyncio.run(client.embed(["x"], model="m"))
+    assert BadRequestEmbeddingClient.calls == 1
+
+
+def test_embed_exhausts_retries_and_raises():
+    class AlwaysFlakyEmbeddingClient(FakeEmbeddingClient):
+        calls = 0
+
+        async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
+            type(self).calls += 1
+            raise httpx.ConnectError("still broken")
+
+    client = AlwaysFlakyEmbeddingClient(lambda t: [1.0], max_retries=3, backoff_base=0.001)
+    with pytest.raises(httpx.ConnectError):
+        asyncio.run(client.embed(["x"], model="m"))
+    assert AlwaysFlakyEmbeddingClient.calls == 3

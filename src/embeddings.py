@@ -13,13 +13,26 @@ import hashlib
 import json
 import math
 import os
+import random
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Callable
 
+import httpx
+
 
 class EmbeddingError(RuntimeError):
     pass
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """Retryable HTTP-transport failures: rate limiting / server errors, or a
+    transport-level failure (connect/read timeouts, connection resets --
+    httpx.TransportError is their common base class). Modeled on
+    src/llm.py's _is_retryable."""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code == 429 or exc.response.status_code >= 500
+    return isinstance(exc, httpx.TransportError)
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -39,13 +52,24 @@ def _cache_key(text: str, *, model: str, input_type: str) -> str:
 
 
 class EmbeddingClient(ABC):
-    def __init__(self, *, cache_dir: Path | None = None, concurrency: int = 8) -> None:
+    def __init__(
+        self,
+        *,
+        cache_dir: Path | None = None,
+        concurrency: int = 8,
+        max_retries: int = 3,
+        backoff_base: float = 0.5,
+        batch_size: int = 64,
+    ) -> None:
         self.cache_dir = cache_dir
         if cache_dir is not None:
             cache_dir.mkdir(parents=True, exist_ok=True)
         self.calls_made = 0
         self.cache_hits = 0
         self._semaphore = asyncio.Semaphore(concurrency)
+        self.max_retries = max_retries
+        self.backoff_base = backoff_base
+        self.batch_size = batch_size
 
     @abstractmethod
     async def _raw(self, texts: list[str], *, model: str, input_type: str) -> list[list[float]]:
@@ -86,18 +110,44 @@ class EmbeddingClient(ABC):
             else:
                 misses.append((i, text))
 
-        if misses:
+        for start in range(0, len(misses), self.batch_size):
+            chunk = misses[start : start + self.batch_size]
             self.calls_made += 1
             async with self._semaphore:
-                fresh = await self._raw([t for _, t in misses], model=model, input_type=input_type)
-            if len(fresh) != len(misses):
-                raise EmbeddingError(f"expected {len(misses)} embedding(s), got {len(fresh)}")
-            for (i, text), embedding in zip(misses, fresh):
+                fresh = await self._call_with_backoff(
+                    [t for _, t in chunk], model=model, input_type=input_type
+                )
+            if len(fresh) != len(chunk):
+                raise EmbeddingError(f"expected {len(chunk)} embedding(s), got {len(fresh)}")
+            # Write this chunk's results to cache immediately -- so a later
+            # chunk's failure never loses the embeddings this chunk already
+            # paid for.
+            for (i, text), embedding in zip(chunk, fresh):
                 results[i] = embedding
                 self._cache_write(text, embedding, model=model, input_type=input_type)
 
         assert all(r is not None for r in results)
         return results  # type: ignore[return-value]
+
+    async def _call_with_backoff(
+        self, texts: list[str], *, model: str, input_type: str
+    ) -> list[list[float]]:
+        """Retry loop around _raw() for one chunk, same shape as
+        src/llm.py's LLMClient._call_with_backoff. Propagates the exception
+        once retries are exhausted -- callers must not swallow it, since a
+        chunk that never succeeded must not be silently treated as
+        embedded."""
+        last: Exception | None = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                return await self._raw(texts, model=model, input_type=input_type)
+            except Exception as exc:  # noqa: BLE001 - re-raised below
+                if not _is_retryable(exc) or attempt == self.max_retries:
+                    raise
+                last = exc
+                delay = self.backoff_base * (2 ** (attempt - 1))
+                await asyncio.sleep(delay + random.uniform(0, self.backoff_base))
+        raise last  # pragma: no cover - loop always returns or raises
 
 
 class FakeEmbeddingClient(EmbeddingClient):
@@ -120,8 +170,6 @@ class VoyageEmbeddingClient(EmbeddingClient):
 
     def __init__(self, *, api_key: str | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        import httpx
-
         key = api_key or os.environ.get("VOYAGE_API_KEY")
         if not key:
             raise EmbeddingError(
