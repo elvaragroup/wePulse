@@ -17,6 +17,7 @@ from web.backend.transform import (
     select_curated_quotes,
     top_categories,
 )
+from web.backend.runs import WebDataError, get_run_dir
 
 
 @pytest.fixture
@@ -205,3 +206,16 @@ def test_compare_predictions_backlash_disagreement(taxonomy):
     )
     diff = compare_predictions(naive, ensemble, taxonomy)
     assert diff.backlash_agreement is False
+
+
+# --- get_run_dir ---
+
+
+@pytest.mark.parametrize("bad_manifest", ["[1, 2, 3]", '"just a string"'])
+def test_get_run_dir_raises_on_non_dict_manifest(tmp_path, bad_manifest):
+    run_subdir = tmp_path / "runs" / "20260101T000000.000Z_deadbeef"
+    run_subdir.mkdir(parents=True)
+    (run_subdir / "manifest.json").write_text(bad_manifest, encoding="utf-8")
+
+    with pytest.raises(WebDataError):
+        get_run_dir(tmp_path)

@@ -38,6 +38,9 @@ def get_run_dir(repo: Path = REPO) -> Path:
         except (json.JSONDecodeError, OSError) as exc:
             raise WebDataError(f"failed to read {manifest_path}: {exc}") from exc
 
+        if not isinstance(manifest, dict):
+            raise WebDataError(f"{manifest_path} did not parse to a JSON object (got {type(manifest).__name__})")
+
         if manifest.get("status") == "complete":
             complete_runs.append(run_subdir)
 
