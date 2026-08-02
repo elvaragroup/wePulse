@@ -167,8 +167,8 @@ HTTP 404.
 - Mode-dependent panels (only one visible at a time, switched via radio control):
   - **Naive mode:** backlash prediction (bool badge), top 3 categories with confidence scores.
   - **Ensemble mode:** backlash prediction, top 3 categories, reaction sentiment breakdown
-    (counts of ignore/mild/criticize/outrage), 3-5 curated persona quotes with archetype,
-    platform, intensity, and their reaction.
+    (counts of ignore/mild/criticize/outrage), up to 8 curated persona quotes (diversified
+    by archetype) with platform, intensity, and their reaction.
   - **Comparison mode:** side-by-side cards for naive vs. ensemble; top categories for each;
     intersection (agreed) and diffs (ensemble-only, naive-only); backlash agreement badge.
 
@@ -202,9 +202,10 @@ Separation of concerns following the existing codebase's conventions:
 
 - **`transform.py`:** Pure display transforms. Computes display-friendly summaries from
   raw data: `reaction_mix_summary()` (plain-language reaction breakdown),
-  `select_curated_quotes()` (pick 3-5 representative personas), `top_categories()`
-  (rank categories by confidence), `compare_predictions()` (diff naive vs. ensemble
-  predictions). All functions are pure and testable without LLM calls or file I/O.
+  `select_curated_quotes()` (pick up to 8 representative personas, diversifying by
+  archetype first), `top_categories()` (rank categories by confidence),
+  `compare_predictions()` (diff naive vs. ensemble predictions). All functions are
+  pure and testable without LLM calls or file I/O.
 
 ### Frontend (`web/frontend/`)
 
@@ -263,9 +264,11 @@ Test files:
 - `tests/test_web_service.py`: API response shapes and data orchestration. Tests `list_event_summaries()`
   and `build_event_result()` produce correct shapes against real inputs and runs.
 - `tests/test_web_transform.py`: Display transforms and run-directory discovery. Tests
-  `reaction_mix_summary()`, `select_curated_quotes()`, `top_categories()`, `compare_predictions()`,
-  and `get_run_dir()` (with temp `runs/` directories) to verify correct behavior when zero, one,
-  or multiple complete runs exist.
+  `reaction_mix_summary()` with various reaction count mixes (including all-zero and singular
+  counts), `select_curated_quotes()` with different persona archetype mixes and limits,
+  `top_categories()` with different prediction scoring patterns, `compare_predictions()` with
+  agreement and disagreement scenarios, and `get_run_dir()` with temp `runs/` directories to
+  verify it raises `WebDataError` when manifest.json does not parse to a JSON object.
 - `tests/test_web_api.py`: End-to-end HTTP layer. Makes requests to `/api/events` and
   `/api/events/{event_id}/result` via `TestClient`, asserts status codes and response shapes.
 
