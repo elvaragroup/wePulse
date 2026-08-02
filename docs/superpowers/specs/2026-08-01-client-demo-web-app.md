@@ -54,8 +54,9 @@ All data is precomputed and static, sourced from a prior `run_sim.py` + `score.p
 | `runs/*/predictions/<event_id>__B30.json` | `ArmPrediction.model_validate_json` | `backlash_predicted`, `ranked_categories`, `scores` |
 | `taxonomy.txt` | `src.taxonomy.load_taxonomy` | category metadata (labels, axes) |
 
-The app discovers the most recent `run_*/` directory at startup (via `web.backend.runs.get_run_dir`),
-reads predictions and reactions from it, and merges them with static event/persona definitions.
+The app requires exactly one `run_*/` directory with `"status": "complete"` in its `manifest.json`
+(via `web.backend.runs.get_run_dir`), reads predictions and reactions from it, and merges them with
+static event/persona definitions. If zero or multiple complete runs exist, the app errors loudly.
 
 ## API contract
 
@@ -183,9 +184,9 @@ Separation of concerns following the existing codebase's conventions:
 - **`main.py`:** FastAPI HTTP entry point. Declares two API routes (`GET /api/events`,
   `GET /api/events/{event_id}/result`), mounts the static frontend at `/`. No business logic.
 
-- **`runs.py`:** Run-directory discovery. Exposes `get_run_dir(repo)` to find the most recent
-  `runs/YYYYMMDDTHHMMSS.###Z_<hash>/` directory, and `WebDataError` for missing/malformed
-  run data (404 cases). Reuses existing study-side `REPO` convention.
+- **`runs.py`:** Run-directory discovery. Exposes `get_run_dir(repo)` to find the one run directory
+  with `"status": "complete"` in its `manifest.json`; raises `WebDataError` if zero or multiple
+  complete runs exist, or if the manifest is missing/malformed. Reuses existing study-side `REPO` convention.
 
 - **`service.py`:** Data orchestration. Defines dataclasses for API response shapes
   (`EventSummary`, `EventContext`, `NaiveResult`, `EnsembleResult`, `EventResult`).
@@ -251,29 +252,25 @@ To run as a production server (no auto-reload):
 uv run uvicorn web.backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-The server discovers the most recent `runs/*/` directory at import time and serves its data.
-If no runs exist, the app will error on startup (by design; the study must be run first).
+The server discovers the required run directory when processing requests to `/api/events/{event_id}/result`
+(not at startup). If no runs with `status: "complete"` exist, or if multiple exist, the endpoint will
+error with a clear message (by design; the study must be run first, and run to exactly one complete state).
 
 ## Testing
 
 Test files:
 
-- `tests/test_service.py`: API response shapes and data orchestration. Mock `load_events`,
-  `load_personas`, `load_taxonomy`, and raw persona reactions/predictions; assert
-  `list_event_summaries()` and `build_event_result()` produce correct shapes.
-- `tests/test_transform.py`: Display transforms. Hand-built fixtures for reactions and
-  predictions; assert `reaction_mix_summary()`, `select_curated_quotes()`, `top_categories()`,
-  and `compare_predictions()` produce correct text and diffs.
-- `tests/test_runs.py`: Run-directory discovery. Create temp `runs/` with predictable
-  structure; assert `get_run_dir()` finds the most recent and `WebDataError` raises for
-  missing data.
-- `tests/test_web_integration.py`: End-to-end HTTP layer. Mock the service layer; make
-  requests to `/api/events` and `/api/events/{event_id}/result` via `TestClient`, assert
-  status codes and response shapes.
+- `tests/test_web_service.py`: API response shapes and data orchestration. Tests `list_event_summaries()`
+  and `build_event_result()` produce correct shapes against real inputs and runs.
+- `tests/test_web_transform.py`: Display transforms and run-directory discovery. Tests
+  `reaction_mix_summary()`, `select_curated_quotes()`, `top_categories()`, `compare_predictions()`,
+  and `get_run_dir()` (with temp `runs/` directories) to verify correct behavior when zero, one,
+  or multiple complete runs exist.
+- `tests/test_web_api.py`: End-to-end HTTP layer. Makes requests to `/api/events` and
+  `/api/events/{event_id}/result` via `TestClient`, asserts status codes and response shapes.
 
 Frontend testing: manual browser verification only (interactive UI, state transitions).
-No JavaScript test suite (small surface area, covered by the integration test that mocks
-the backend service layer).
+No JavaScript test suite (small surface area, coverage via end-to-end HTTP tests in `test_web_api.py`).
 
 ## Files
 
@@ -293,10 +290,9 @@ the backend service layer).
 - `web/frontend/js/render.js` (DOM rendering)
 
 **Tests:**
-- `tests/test_service.py`
-- `tests/test_transform.py`
-- `tests/test_runs.py`
-- `tests/test_web_integration.py`
+- `tests/test_web_service.py`
+- `tests/test_web_transform.py`
+- `tests/test_web_api.py`
 
 **Dependencies:**
 - `pyproject.toml` [project.optional-dependencies]
