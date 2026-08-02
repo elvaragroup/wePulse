@@ -1,1 +1,128 @@
-<!doctype html><title>crisis-sim demo</title>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>crisis-sim — see it in action</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <span class="brand__name">crisis&#8209;sim</span>
+        </div>
+        <p class="brand__tagline">
+          Know how the public will react — before you press publish.
+        </p>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <h1 class="intro__title">See it in action</h1>
+        <p class="intro__lede">
+          Pick a real announcement from the past. We replay it in front of a
+          simulated audience of 30 distinct people and show you what they say —
+          alongside what a single, ordinary AI call would have told you.
+        </p>
+      </section>
+
+      <section class="console" aria-label="Simulation controls">
+        <div class="console__row">
+          <div class="field field--grow">
+            <label class="field__label" for="event-select">Announcement</label>
+            <div class="select-wrap">
+              <select id="event-select" class="select" disabled>
+                <option value="">Loading announcements…</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field__label" id="mode-label">View</span>
+            <div
+              class="segmented"
+              id="mode-control"
+              role="radiogroup"
+              aria-labelledby="mode-label"
+            >
+              <label class="segmented__option">
+                <input type="radio" name="mode" value="naive" />
+                <span>Naive AI</span>
+              </label>
+              <label class="segmented__option">
+                <input type="radio" name="mode" value="ensemble" />
+                <span>Persona Ensemble</span>
+              </label>
+              <label class="segmented__option">
+                <input type="radio" name="mode" value="comparison" checked />
+                <span>Side&#8209;by&#8209;side</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field field--action">
+            <button type="button" id="run-button" class="run-button" disabled>
+              <span class="run-button__label">Run Simulation</span>
+              <span class="run-button__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+        <p class="console__hint" id="console-hint" role="status"></p>
+      </section>
+
+      <section class="results" aria-live="polite">
+        <div class="state state--empty" id="state-empty">
+          <div class="state__glyph" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2 class="state__title">Choose an announcement to begin</h2>
+          <p class="state__body" id="state-empty-body">
+            Select a real-world announcement above, then press
+            <strong>Run Simulation</strong>.
+          </p>
+        </div>
+
+        <div class="state state--loading" id="state-loading" hidden>
+          <div class="pulse" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <h2 class="state__title">Convening the audience…</h2>
+          <p class="state__body">
+            Replaying the announcement for 30 independent personas.
+          </p>
+        </div>
+
+        <div class="state state--error" id="state-error" hidden>
+          <h2 class="state__title">We couldn’t load that simulation</h2>
+          <p class="state__body" id="state-error-body"></p>
+        </div>
+
+        <div id="result" hidden>
+          <div id="event-context"></div>
+
+          <div class="mode-panel" id="mode-panel-naive" hidden>
+            <div id="panel-naive"></div>
+          </div>
+          <div class="mode-panel" id="mode-panel-ensemble" hidden>
+            <div id="panel-ensemble"></div>
+          </div>
+          <div class="mode-panel" id="mode-panel-comparison" hidden>
+            <div id="panel-comparison"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        crisis&#8209;sim · persona-ensemble reaction modelling · results shown
+        are from previously recorded simulation runs
+      </p>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
