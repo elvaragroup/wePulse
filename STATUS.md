@@ -18,9 +18,13 @@ In priority order (see `../CRISIS_SIM_VALIDATION_SPEC.md` §9 and
 1. Run the diagnostics Milestone A baseline for real (requires a human-provisioned
    `VOYAGE_API_KEY`) against the 23-event run and the 2-event smoke run, and write
    `results/diagnostics_baseline.json`.
-2. Collect real ground truth for a handful of events into `ground_truth/raw/`, then run
-   `label_truth.py` → `score.py` → `check_judge.py`. **This has never been done** — the
-   spec's core question ("does B30 beat A?") has no answer yet.
+2. Collect real ground truth, following `ground_truth/README.md`'s Batch 0 list (5 events:
+   evt_002, evt_005, evt_006, evt_007, evt_023) first, then run `label_truth.py` →
+   `check_judge.py` (kappa gate) → `score.py`. **This has never been done** — the spec's
+   core question ("does B30 beat A?") has no answer yet. Full methodology, dev/holdout
+   partition, and version-acceptance criteria:
+   `docs/superpowers/specs/2026-08-02-persona-improvement-methodology.md`. Track progress
+   in `../VERSIONS.md` (v1.0 entry currently `BLOCKED`).
 3. Only after 1–2: resume persona-v2 Phases 1–4 (corpus ingestion → grievance clustering →
    v2 persona generation → staged pipeline), which are fully unstarted. Use
    brainstorming → writing-plans → subagent-driven-development.
@@ -34,9 +38,9 @@ Needed for the Homogeneity/Redundancy embedding-based metrics.
 ```
 
 ```
-BLOCKED ON HUMAN: ground_truth/raw/ is empty. The v1 study cannot be scored until real
-post-announcement reactions are pasted in per CRISIS_SIM_VALIDATION_SPEC.md §2.4 (typically
-72h after each event).
+BLOCKED ON HUMAN: ground_truth/raw/ is empty. All 23 events are already 80+ days old, so
+this is retroactive research (finding archived reaction threads), not a 72h wait. Follow
+ground_truth/README.md's Batch 0 list (5 events) first.
 ```
 
 ## Known, not urgent
