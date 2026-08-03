@@ -13,6 +13,7 @@ import {
   renderComparisonPanel,
   renderEnsemblePanel,
   renderEventContext,
+  renderGroundTruth,
   renderNaivePanel,
   setHint,
   setRunBusy,
@@ -60,6 +61,7 @@ function selectedEventLabel() {
 /** Draw all three views for a payload; `animate` is for fresh runs only. */
 function renderPayload(eventId, payload, { animate }) {
   renderEventContext(payload);
+  renderGroundTruth(payload);
   renderNaivePanel(payload);
   renderEnsemblePanel(payload);
   renderComparisonPanel(payload);

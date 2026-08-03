@@ -25,16 +25,19 @@ from src.dashboard import (
     split_reacted_and_ignored,
 )
 from src.events import Event, load_events
+from src.models import GroundTruthLabel
 from src.personas import Persona, load_personas
 from src.taxonomy import Taxonomy, load_taxonomy
 from web.backend.runs import REPO, WebDataError, get_run_dir
 from web.backend.transform import (
     CategoryDiff,
     CategoryScore,
+    GroundTruthDisplay,
     QuoteItem,
     compare_predictions,
     reaction_mix_summary,
     select_curated_quotes,
+    to_ground_truth_display,
     top_categories,
 )
 
@@ -48,6 +51,7 @@ __all__ = [
     "EventResult",
     "list_event_summaries",
     "build_event_result",
+    "resolve_ground_truth",
 ]
 
 
@@ -92,6 +96,7 @@ class EventResult:
     naive: NaiveResult
     ensemble: EnsembleResult
     comparison: CategoryDiff
+    ground_truth: GroundTruthDisplay | None
 
 
 @lru_cache(maxsize=None)
@@ -115,6 +120,20 @@ def _find_event(events: tuple[Event, ...], event_id: str) -> Event:
         if event.id == event_id:
             return event
     raise WebDataError(f"unknown event_id {event_id!r}: not found in inputs/events.txt")
+
+
+def resolve_ground_truth(event_id: str, repo: Path = REPO) -> GroundTruthLabel | None:
+    """Load a real, judge-produced ground-truth label if one exists.
+
+    Returns None when `ground_truth/labeled/<event_id>.json` doesn't exist --
+    the honest, universal case today (see ground_truth/README.md). The moment
+    `label_truth.py` is run for real on an event, this starts returning data
+    with no further changes needed anywhere in this module.
+    """
+    path = repo / "ground_truth" / "labeled" / f"{event_id}.json"
+    if not path.exists():
+        return None
+    return GroundTruthLabel.model_validate_json(path.read_text(encoding="utf-8"))
 
 
 def list_event_summaries(repo: Path = REPO) -> list[EventSummary]:
@@ -187,10 +206,13 @@ def build_event_result(event_id: str, repo: Path = REPO) -> EventResult:
     )
 
     comparison = compare_predictions(naive_pred, ensemble_pred, taxonomy)
+    ground_truth_label = resolve_ground_truth(event_id, repo)
+    ground_truth = to_ground_truth_display(ground_truth_label, taxonomy)
 
     return EventResult(
         event=event_context,
         naive=naive_result,
         ensemble=ensemble_result,
         comparison=comparison,
+        ground_truth=ground_truth,
     )

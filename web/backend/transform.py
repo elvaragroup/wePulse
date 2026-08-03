@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.dashboard import ReactionRow
-from src.models import ArmPrediction
+from src.models import ArmPrediction, GroundTruthLabel
 from src.personas import Persona
 from src.taxonomy import Taxonomy
 
@@ -89,11 +89,12 @@ def reaction_mix_summary(counts: dict[str, int]) -> str:
         word = "persona" if mild_count == 1 else "personas"
         parts.append(f"{mild_count} {word} expressed mild concern")
 
-    # Handle ignore
+    # Handle ignore -- "had no reaction" rather than "stayed silent": neutral
+    # framing, not language that reads as the panel having nothing to offer.
     ignore_count = non_zero.get("ignore", 0)
     if ignore_count > 0:
         word = "persona" if ignore_count == 1 else "personas"
-        parts.append(f"{ignore_count} {word} stayed silent")
+        parts.append(f"{ignore_count} {word} had no reaction")
 
     return " and ".join(parts) + "."
 
@@ -220,4 +221,53 @@ def compare_predictions(
         ensemble_only=ensemble_only,
         naive_only=naive_only,
         backlash_agreement=backlash_agreement,
+    )
+
+
+@dataclass(frozen=True)
+class GroundTruthDisplay:
+    """What actually happened, as labeled by the blind judge from real reactions.
+
+    None upstream (see `to_ground_truth_display`) means no labeled ground
+    truth exists yet for this event -- the honest, common case today, since
+    `ground_truth/labeled/` is still empty for all 23 events. The frontend
+    must render a clear pending state in that case, never a fabricated one.
+    """
+
+    dominant_category: CategoryScore
+    present_categories: list[CategoryScore]
+    backlash_occurred: bool
+    judge_confidence: float
+    summary: str
+
+
+def to_ground_truth_display(
+    label: GroundTruthLabel | None, taxonomy: Taxonomy
+) -> GroundTruthDisplay | None:
+    """Adapt a judge-produced GroundTruthLabel into its display shape.
+
+    Returns None unchanged when no label exists -- this is the pass-through
+    that keeps the pending state honest end to end.
+    """
+    if label is None:
+        return None
+
+    dominant = CategoryScore(
+        id=label.dominant_category,
+        label=category_label(taxonomy, label.dominant_category),
+        confidence=label.judge_confidence,
+    )
+    present = [
+        CategoryScore(id=c, label=category_label(taxonomy, c), confidence=None)
+        for c in label.present_categories
+    ]
+    outcome = "showing meaningful backlash" if label.backlash_occurred else "showing no significant backlash"
+    summary = f"Real-world reaction was judged as {outcome}, primarily around {dominant.label}."
+
+    return GroundTruthDisplay(
+        dominant_category=dominant,
+        present_categories=present,
+        backlash_occurred=label.backlash_occurred,
+        judge_confidence=label.judge_confidence,
+        summary=summary,
     )

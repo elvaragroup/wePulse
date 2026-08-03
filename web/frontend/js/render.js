@@ -20,6 +20,7 @@ const dom = {
   errorBody: document.getElementById('state-error-body'),
   result: document.getElementById('result'),
   context: document.getElementById('event-context'),
+  groundTruth: document.getElementById('ground-truth'),
   panels: {
     naive: document.getElementById('panel-naive'),
     ensemble: document.getElementById('panel-ensemble'),
@@ -50,6 +51,15 @@ const REACTION_LABELS = {
 
 /** Display order for the reaction mix bar: loudest first. */
 const REACTION_ORDER = ['outrage', 'criticize', 'mild_concern', 'ignore'];
+
+/**
+ * `true`/`false` once ground truth is known, `null` while pending -- feeds
+ * `buildVerdict`'s tri-state `correct` option directly.
+ */
+function predictionCorrectness(predicted, groundTruth) {
+  if (!groundTruth) return null;
+  return predicted === groundTruth.backlash_occurred;
+}
 
 /* -------------------------------------------------------------- utilities */
 
@@ -137,7 +147,12 @@ function joinLabels(categories) {
 
 /* --------------------------------------------------------- shared pieces */
 
-function buildVerdict(backlashPredicted, { small = false } = {}) {
+/**
+ * `correct` is a tri-state: `true`/`false` once ground truth is known, or
+ * `null`/`undefined` while it's still pending -- in the pending case no
+ * check/cross mark is shown, since correctness genuinely isn't known yet.
+ */
+function buildVerdict(backlashPredicted, { small = false, correct = null } = {}) {
   const badge = el(
     'div',
     `verdict ${backlashPredicted ? 'verdict--yes' : 'verdict--no'}${
@@ -152,6 +167,15 @@ function buildVerdict(backlashPredicted, { small = false } = {}) {
       backlashPredicted ? 'Backlash predicted: Yes' : 'Backlash predicted: No',
     ),
   );
+  if (correct !== null && correct !== undefined) {
+    badge.appendChild(
+      el(
+        'span',
+        `verdict__result verdict__result--${correct ? 'correct' : 'incorrect'}`,
+        correct ? 'Correct' : 'Incorrect',
+      ),
+    );
+  }
   return badge;
 }
 
@@ -194,11 +218,12 @@ function buildConcernList(categories, { scored = false } = {}) {
     }
 
     if (scored) {
-      // An em dash keeps the column aligned for categories the ensemble
-      // ranked but did not score (e.g. "No meaningful backlash").
+      // Some categories the ensemble ranks (e.g. "No meaningful backlash")
+      // aren't individually scored -- spell that out rather than leaving an
+      // unexplained dash next to rows that do have a percentage.
       row.appendChild(
         el('span', `concern__value${value ? '' : ' concern__value--none'}`,
-          value ?? '—'),
+          value ?? 'not a top concern this run'),
       );
     }
     list.appendChild(row);
@@ -325,12 +350,13 @@ function buildQuotes(quotes, limit, labels) {
 
 function buildNaivePanel(payload) {
   const card = el('section', 'card panel panel--naive');
+  const correct = predictionCorrectness(payload.naive.backlash_predicted, payload.ground_truth);
 
   card.appendChild(
     buildPanelHead(
       'Naive AI',
       'One general-purpose model, asked once, answering on its own.',
-      buildVerdict(payload.naive.backlash_predicted, { small: true }),
+      buildVerdict(payload.naive.backlash_predicted, { small: true, correct }),
     ),
   );
 
@@ -353,12 +379,40 @@ function buildNaivePanel(payload) {
 function buildEnsemblePanel(payload, { quoteLimit } = {}) {
   const ensemble = payload.ensemble;
   const card = el('section', 'card panel panel--ensemble');
+  const correct = predictionCorrectness(ensemble.backlash_predicted, payload.ground_truth);
+
+  const badges = el('div', 'panel__badges');
+  badges.appendChild(buildVerdict(ensemble.backlash_predicted, { small: true, correct }));
+  const panelSize = Object.values(ensemble.reaction_counts ?? {}).reduce(
+    (sum, n) => sum + Number(n ?? 0),
+    0,
+  );
+  if (panelSize > 0) {
+    badges.appendChild(el('span', 'panel-size-tag', `${panelSize} personas`));
+  }
 
   card.appendChild(
     buildPanelHead(
       'Persona Ensemble',
       'Thirty distinct people react independently, then we read the room.',
-      buildVerdict(ensemble.backlash_predicted, { small: true }),
+      badges,
+    ),
+  );
+
+  // Sharpest evidence first: the specific reasoning is what makes the
+  // ensemble's verdict credible, not the aggregate counts behind it.
+  card.appendChild(
+    buildBlock(
+      'What our personas said',
+      buildQuotes(ensemble.sample_quotes, quoteLimit, categoryLabels(payload)),
+    ),
+  );
+
+  card.appendChild(
+    buildBlock(
+      'Top concern areas · confidence',
+      el('p', 'block-legend', '% = share of panel, weighted by intensity.'),
+      buildConcernList(ensemble.top_categories, { scored: true }),
     ),
   );
 
@@ -370,27 +424,86 @@ function buildEnsemblePanel(payload, { quoteLimit } = {}) {
     ),
   );
 
-  card.appendChild(
-    buildBlock(
-      'Top concern areas · confidence',
-      buildConcernList(ensemble.top_categories, { scored: true }),
-    ),
-  );
-
-  card.appendChild(
-    buildBlock(
-      'What our personas said',
-      buildQuotes(ensemble.sample_quotes, quoteLimit, categoryLabels(payload)),
-    ),
-  );
-
   return card;
+}
+
+/* --------------------------------------------------------- ground truth */
+
+/**
+ * Always renders, above both prediction cards. When `payload.ground_truth`
+ * is null (every event today -- see ground_truth/README.md), this is an
+ * honest pending state, never a fabricated outcome.
+ */
+function buildGroundTruthBlock(payload) {
+  const groundTruth = payload.ground_truth;
+  const box = el(
+    'div',
+    `ground-truth${groundTruth ? ' ground-truth--resolved' : ' ground-truth--pending'}`,
+  );
+  box.appendChild(el('p', 'ground-truth__label', 'What actually happened'));
+
+  if (!groundTruth) {
+    box.appendChild(
+      el(
+        'p',
+        'ground-truth__pending',
+        'Pending verification — real-world outcome research for this announcement has not been completed yet.',
+      ),
+    );
+    return box;
+  }
+
+  box.appendChild(
+    el(
+      'p',
+      'ground-truth__outcome',
+      groundTruth.backlash_occurred ? 'Backlash occurred' : 'No significant backlash',
+    ),
+  );
+  box.appendChild(el('p', 'ground-truth__summary', groundTruth.summary));
+  return box;
+}
+
+/** Render the ground-truth block into its own container. */
+export function renderGroundTruth(payload) {
+  const block = buildGroundTruthBlock(payload);
+  clear(dom.groundTruth);
+  dom.groundTruth.appendChild(block);
+  return block;
+}
+
+/**
+ * One line, once ground truth is known: which prediction was right, and
+ * what the wrong one did (raised a false alarm, or missed it). Never
+ * neutral once the outcome is resolved.
+ */
+function resolvedVerdictText(payload) {
+  const groundTruth = payload.ground_truth;
+  const naiveCorrect = payload.naive.backlash_predicted === groundTruth.backlash_occurred;
+  const ensembleCorrect = payload.ensemble.backlash_predicted === groundTruth.backlash_occurred;
+  const outcome = groundTruth.backlash_occurred ? 'backlash' : 'no backlash';
+
+  if (naiveCorrect && ensembleCorrect) {
+    return `Both approaches correctly predicted ${outcome}.`;
+  }
+  if (!naiveCorrect && !ensembleCorrect) {
+    return `Both approaches were wrong — real-world reaction showed ${outcome}.`;
+  }
+
+  const rightLabel = ensembleCorrect ? 'Persona Ensemble' : 'Naive AI';
+  const wrongLabel = ensembleCorrect ? 'Naive AI' : 'Persona Ensemble';
+  const wrongPredictedBacklash = ensembleCorrect
+    ? payload.naive.backlash_predicted
+    : payload.ensemble.backlash_predicted;
+  const wrongVerb = wrongPredictedBacklash ? 'raised a false alarm' : 'missed it';
+  return `${rightLabel} correctly predicted ${outcome}. ${wrongLabel} ${wrongVerb}.`;
 }
 
 /* ------------------------------------------------------- side-by-side bits */
 
 function buildVerdictStrip(payload) {
   const agreed = payload.comparison.backlash_agreement;
+  const groundTruth = payload.ground_truth;
   const strip = el(
     'div',
     `verdict-strip${agreed ? '' : ' verdict-strip--disagree'}`,
@@ -418,9 +531,11 @@ function buildVerdictStrip(payload) {
     el(
       'span',
       'verdict-strip__text',
-      agreed
-        ? '· Both approaches reached the same headline verdict.'
-        : '· The two approaches disagree on the headline verdict.',
+      groundTruth
+        ? `· ${resolvedVerdictText(payload)}`
+        : agreed
+          ? '· Both approaches reached the same headline verdict.'
+          : '· The two approaches disagree on the headline verdict.',
     ),
   );
   return strip;

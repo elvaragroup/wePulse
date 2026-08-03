@@ -10,6 +10,18 @@ Repo cleanup complete: the two previously-stranded feature branches (Milestone A
 diagnostics, client demo web app) are merged into `main` and pushed to `origin`. No
 in-flight plan or worktree at the moment — `main` is the only checkout.
 
+Demo page UI/UX fix pass complete (2026-08-02): ground-truth display mechanism built
+end-to-end (`ground_truth: null` today, renders an honest "pending verification" state,
+never a fabricated outcome), unexplained concern-bar dashes replaced with "not a top
+concern this run", Persona Ensemble card reordered to lead with quotes, reaction colors
+unified via shared CSS variables, panel-size label added. Event curation (item 5 of the
+original fix list, including the DeepSeek/evt_013 label question) is explicitly deferred —
+it depends on real ground truth existing, which it doesn't yet. Full details:
+`docs/superpowers/specs/2026-08-02-persona-improvement-methodology.md` and this session's
+plan. The moment `label_truth.py` produces real `ground_truth/labeled/<event_id>.json`
+files, the UI starts showing resolved outcomes and correct/incorrect marks with zero
+further frontend changes needed.
+
 ## Next
 
 In priority order (see `../CRISIS_SIM_VALIDATION_SPEC.md` §9 and

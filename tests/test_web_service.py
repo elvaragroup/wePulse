@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from web.backend.service import WebDataError, build_event_result, list_event_summaries
+from src.models import GroundTruthLabel
+from web.backend.service import (
+    WebDataError,
+    build_event_result,
+    list_event_summaries,
+    resolve_ground_truth,
+)
 
 
 def test_list_event_summaries_returns_all_23(repo):
@@ -37,7 +43,38 @@ def test_build_event_result_evt_001_matches_real_data(repo):
     assert [c.id for c in result.comparison.naive_only] == ["hypocrisy"]
     assert result.comparison.backlash_agreement is True
 
+    # No real ground truth has been collected for any event yet (see
+    # ground_truth/README.md) -- must render as None, never a fabricated
+    # outcome, until label_truth.py has actually been run on real data.
+    assert result.ground_truth is None
+
 
 def test_build_event_result_unknown_event_raises(repo):
     with pytest.raises(WebDataError, match="evt_999"):
         build_event_result("evt_999", repo=repo)
+
+
+# --- resolve_ground_truth ---
+
+
+def test_resolve_ground_truth_returns_none_when_no_labeled_file(tmp_path):
+    assert resolve_ground_truth("evt_001", repo=tmp_path) is None
+
+
+def test_resolve_ground_truth_reads_labeled_file(tmp_path):
+    labeled_dir = tmp_path / "ground_truth" / "labeled"
+    labeled_dir.mkdir(parents=True)
+    label = GroundTruthLabel(
+        event_id="evt_001",
+        dominant_category="privacy",
+        present_categories=["privacy", "overclaim"],
+        backlash_occurred=True,
+        judge_confidence=0.82,
+    )
+    (labeled_dir / "evt_001.json").write_text(label.model_dump_json(), encoding="utf-8")
+
+    result = resolve_ground_truth("evt_001", repo=tmp_path)
+    assert result is not None
+    assert result.event_id == "evt_001"
+    assert result.dominant_category == "privacy"
+    assert result.backlash_occurred is True

@@ -21,13 +21,15 @@ def test_get_event_result_evt_001():
     response = client.get("/api/events/evt_001/result")
     assert response.status_code == 200
     body = response.json()
-    assert set(body.keys()) == {"event", "naive", "ensemble", "comparison"}
+    assert set(body.keys()) == {"event", "naive", "ensemble", "comparison", "ground_truth"}
     assert body["event"]["id"] == "evt_001"
     assert "expected_null" not in body["event"]
     assert [c["id"] for c in body["naive"]["top_categories"]] == ["privacy", "overclaim", "hypocrisy"]
     assert [c["id"] for c in body["ensemble"]["top_categories"]] == ["privacy", "overclaim", "security"]
     assert body["comparison"]["backlash_agreement"] is True
     assert [c["id"] for c in body["comparison"]["ensemble_only"]] == ["security"]
+    # No real ground truth exists for any event yet (see ground_truth/README.md)
+    assert body["ground_truth"] is None
 
 
 def test_get_event_result_unknown_event_404():

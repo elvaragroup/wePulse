@@ -26,6 +26,14 @@
   --amber: #b5751a;
   --amber-soft: #fdf3e3;
 
+  /* Single source of truth for reaction colors: referenced by both the
+     aggregate mix-bar segments and the individual quote-card tags/dots, so
+     the two always agree. */
+  --reaction-outrage: var(--hot-deep);
+  --reaction-criticize: #e0684f;
+  --reaction-mild-concern: #edb556;
+  --reaction-no-reaction: #d5d9e6;
+
   --shadow-sm: 0 1px 2px rgba(19, 26, 46, 0.06),
     0 1px 3px rgba(19, 26, 46, 0.04);
   --shadow-md: 0 2px 4px rgba(19, 26, 46, 0.04),
@@ -589,6 +597,56 @@ a {
   overflow-y: auto;
 }
 
+/* ------------------------------------------------------------ ground truth */
+
+.ground-truth {
+  margin-top: 18px;
+  margin-bottom: 18px;
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.ground-truth__label {
+  font-size: 0.72rem;
+  font-weight: 680;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ground-truth--pending {
+  background: #f5f6fa;
+  border-style: dashed;
+  border-color: var(--line-strong);
+}
+
+.ground-truth__pending {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.ground-truth--resolved {
+  background: var(--card);
+}
+
+.ground-truth__outcome {
+  margin-top: 6px;
+  font-size: 1.15rem;
+  font-weight: 660;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.ground-truth__summary {
+  margin-top: 4px;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
 /* ---------------------------------------------------------------- panels */
 
 .panel__head {
@@ -677,6 +735,47 @@ a {
   padding: 7px 15px 7px 11px;
 }
 
+.verdict__result {
+  font-size: 0.76rem;
+  font-weight: 660;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.verdict__result--correct {
+  background: var(--calm-soft);
+  color: #145f41;
+}
+
+.verdict__result--incorrect {
+  background: var(--hot-soft);
+  color: var(--hot-deep);
+}
+
+/* panel badge cluster: verdict + panel-size tag, stacked so both stay
+   visible even after scrolling past the page intro copy. */
+
+.panel__badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.panel-size-tag {
+  font-size: 0.75rem;
+  font-weight: 550;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.block-legend {
+  margin: -4px 0 10px;
+  font-size: 0.79rem;
+  color: var(--muted);
+}
+
 /* concern lists */
 
 .concerns {
@@ -750,6 +849,10 @@ a {
 .concern__value--none {
   color: #aeb5c8;
   font-weight: 550;
+  font-size: 0.79rem;
+  max-width: 150px;
+  text-align: right;
+  white-space: normal;
 }
 
 .concern__none {
@@ -811,16 +914,16 @@ a {
 }
 
 .mix-bar__seg--outrage {
-  background: var(--hot-deep);
+  background: var(--reaction-outrage);
 }
 .mix-bar__seg--criticize {
-  background: #e0684f;
+  background: var(--reaction-criticize);
 }
 .mix-bar__seg--mild_concern {
-  background: #edb556;
+  background: var(--reaction-mild-concern);
 }
 .mix-bar__seg--ignore {
-  background: #d5d9e6;
+  background: var(--reaction-no-reaction);
 }
 
 .mix-legend {
@@ -866,13 +969,13 @@ a {
 }
 
 .quote--criticize {
-  border-left-color: #e0684f;
+  border-left-color: var(--reaction-criticize);
 }
 .quote--outrage {
-  border-left-color: var(--hot-deep);
+  border-left-color: var(--reaction-outrage);
 }
 .quote--mild_concern {
-  border-left-color: #edb556;
+  border-left-color: var(--reaction-mild-concern);
 }
 
 .quote__head {
@@ -919,15 +1022,15 @@ a {
 }
 
 .quote__intensity i.on {
-  background: #e0684f;
+  background: var(--reaction-criticize);
 }
 
 .quote--outrage .quote__intensity i.on {
-  background: var(--hot-deep);
+  background: var(--reaction-outrage);
 }
 
 .quote--mild_concern .quote__intensity i.on {
-  background: #edb556;
+  background: var(--reaction-mild-concern);
 }
 
 .quote__text {

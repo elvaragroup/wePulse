@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 
 from src.dashboard import ReactionRow
-from src.models import ArmPrediction
+from src.models import ArmPrediction, GroundTruthLabel
 from src.personas import Persona
 from src.taxonomy import Taxonomy, TaxonomyEntry
 from web.backend.transform import (
@@ -15,6 +15,7 @@ from web.backend.transform import (
     compare_predictions,
     reaction_mix_summary,
     select_curated_quotes,
+    to_ground_truth_display,
     top_categories,
 )
 from web.backend.runs import WebDataError, get_run_dir
@@ -88,13 +89,13 @@ def test_reaction_mix_summary_evt_001_real_counts():
     # Real counts from runs/20260730T002314.423Z_2ec30ae6/raw/B30/evt_001
     counts = {"ignore": 11, "mild_concern": 11, "criticize": 8, "outrage": 0}
     summary = reaction_mix_summary(counts)
-    assert summary == "8 personas objected and 11 personas expressed mild concern and 11 personas stayed silent."
+    assert summary == "8 personas objected and 11 personas expressed mild concern and 11 personas had no reaction."
 
 
 def test_reaction_mix_summary_singular_counts():
     counts = {"ignore": 1, "mild_concern": 0, "criticize": 1, "outrage": 1}
     summary = reaction_mix_summary(counts)
-    assert summary == "2 personas objected and 1 persona stayed silent."
+    assert summary == "2 personas objected and 1 persona had no reaction."
 
 
 def test_reaction_mix_summary_all_zero_except_ignore():
@@ -206,6 +207,49 @@ def test_compare_predictions_backlash_disagreement(taxonomy):
     )
     diff = compare_predictions(naive, ensemble, taxonomy)
     assert diff.backlash_agreement is False
+
+
+# --- to_ground_truth_display ---
+
+
+def test_to_ground_truth_display_none_stays_none(taxonomy):
+    # The universal case today: no labeled ground truth exists for any event
+    # yet (see ground_truth/README.md). Must pass through as None, never a
+    # fabricated result.
+    assert to_ground_truth_display(None, taxonomy) is None
+
+
+def test_to_ground_truth_display_resolves_real_label(taxonomy):
+    label = GroundTruthLabel(
+        event_id="evt_001",
+        dominant_category="privacy",
+        present_categories=["privacy", "overclaim"],
+        backlash_occurred=True,
+        judge_confidence=0.82,
+    )
+    display = to_ground_truth_display(label, taxonomy)
+    assert display is not None
+    assert display.dominant_category.id == "privacy"
+    assert display.dominant_category.label == "Privacy & data"
+    assert display.dominant_category.confidence == pytest.approx(0.82)
+    assert [c.id for c in display.present_categories] == ["privacy", "overclaim"]
+    assert display.backlash_occurred is True
+    assert display.judge_confidence == pytest.approx(0.82)
+    assert "Privacy & data" in display.summary
+    assert "meaningful backlash" in display.summary
+
+
+def test_to_ground_truth_display_no_backlash_summary_wording(taxonomy):
+    label = GroundTruthLabel(
+        event_id="evt_002",
+        dominant_category="none",
+        present_categories=["none"],
+        backlash_occurred=False,
+        judge_confidence=0.9,
+    )
+    display = to_ground_truth_display(label, taxonomy)
+    assert display.backlash_occurred is False
+    assert "no significant backlash" in display.summary
 
 
 # --- get_run_dir ---

@@ -17,7 +17,7 @@ from web.backend.service import (
     EventSummary,
     NaiveResult,
 )
-from web.backend.transform import CategoryDiff, CategoryScore, QuoteItem
+from web.backend.transform import CategoryDiff, CategoryScore, GroundTruthDisplay, QuoteItem
 
 __all__ = [
     "EventSummaryOut",
@@ -27,6 +27,7 @@ __all__ = [
     "QuoteItemOut",
     "EnsembleResultOut",
     "ComparisonOut",
+    "GroundTruthOut",
     "EventResultResponse",
     "EventsListResponse",
     "to_event_summary_out",
@@ -36,6 +37,7 @@ __all__ = [
     "to_quote_item_out",
     "to_ensemble_result_out",
     "to_comparison_out",
+    "to_ground_truth_out",
     "to_event_result_response",
     "to_events_list_response",
 ]
@@ -94,11 +96,20 @@ class ComparisonOut(BaseModel):
     backlash_agreement: bool
 
 
+class GroundTruthOut(BaseModel):
+    dominant_category: CategoryScoreOut
+    present_categories: list[CategoryScoreOut]
+    backlash_occurred: bool
+    judge_confidence: float
+    summary: str
+
+
 class EventResultResponse(BaseModel):
     event: EventContextOut
     naive: NaiveResultOut
     ensemble: EnsembleResultOut
     comparison: ComparisonOut
+    ground_truth: GroundTruthOut | None
 
 
 class EventsListResponse(BaseModel):
@@ -168,12 +179,25 @@ def to_comparison_out(comparison: CategoryDiff) -> ComparisonOut:
     )
 
 
+def to_ground_truth_out(ground_truth: GroundTruthDisplay | None) -> GroundTruthOut | None:
+    if ground_truth is None:
+        return None
+    return GroundTruthOut(
+        dominant_category=to_category_score_out(ground_truth.dominant_category),
+        present_categories=[to_category_score_out(c) for c in ground_truth.present_categories],
+        backlash_occurred=ground_truth.backlash_occurred,
+        judge_confidence=ground_truth.judge_confidence,
+        summary=ground_truth.summary,
+    )
+
+
 def to_event_result_response(result: EventResult) -> EventResultResponse:
     return EventResultResponse(
         event=to_event_context_out(result.event),
         naive=to_naive_result_out(result.naive),
         ensemble=to_ensemble_result_out(result.ensemble),
         comparison=to_comparison_out(result.comparison),
+        ground_truth=to_ground_truth_out(result.ground_truth),
     )
 
 
