@@ -41,11 +41,25 @@ post-announcement reactions are pasted in per CRISIS_SIM_VALIDATION_SPEC.md §2.
 
 ## Known, not urgent
 
-- `web/backend/runs.py get_run_dir()` requires exactly one local run marked `complete`;
-  this machine currently has two (`runs/20260729T...`, `runs/20260730T...`), so
-  `test_web_api.py`/`test_web_service.py`'s real-data tests fail locally. Not a code bug —
-  see CLAUDE.md "Local environment gotchas." Undecided: archive old runs, or make
-  `get_run_dir()` pick the most recent.
 - `main` was 10 commits ahead of `origin` and unpushed for several days before 2026-08-02 —
   now resolved, but a good reminder to push regularly (see CLAUDE.md "End-of-session
   rule").
+- `get_run_dir()` still requires exactly one local run marked `complete` by design (not
+  changed). The `runs/20260729T...` ambiguity is resolved locally by moving it to
+  `runs/_archive/` (gitignored, so this doesn't affect other machines) — if you pull a
+  fresh clone or add another real run later, you'll need to archive down to one `complete`
+  run again, or someone should change `get_run_dir()` to pick the most recent.
+
+## Verified live, 2026-08-02
+
+Ran the merged demo end-to-end in a browser (`uv run uvicorn web.backend.main:app`) for the
+first time since both branches merged. Overall UI/UX is genuinely solid — clear narrative
+per event card (verdict summary → Naive AI vs Persona Ensemble panels → "what a single AI
+call would have missed" callout), good typography and spacing, side-by-side/single-view
+toggle all work. Found and fixed one real bug in the process: the "Read the announcement"
+`<details>` panel's CSS (`web/frontend/styles.css` `.announcement__body`) applied its
+340px `max-height` unconditionally instead of gating it on `.announcement[open]`, so every
+card carried a permanent blank 340px gap even when collapsed. Fixed in `d1ac195` and
+verified both collapsed and expanded states render correctly. This is the kind of thing
+that's easy to miss without actually loading the page — worth doing a quick live check like
+this after merging UI work, not just trusting the test suite.
