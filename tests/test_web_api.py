@@ -7,14 +7,17 @@ from web.backend.main import app
 client = TestClient(app)
 
 
-def test_get_events_returns_23_sorted():
+def test_get_events_returns_24_sorted():
     response = client.get("/api/events")
     assert response.status_code == 200
     events = response.json()["events"]
-    assert len(events) == 23
+    assert len(events) == 24
     ids = [e["id"] for e in events]
     assert ids == sorted(ids)
-    assert set(events[0].keys()) == {"id", "company", "headline", "date", "sector"}
+    assert set(events[0].keys()) == {"id", "company", "headline", "date", "sector", "illustrative"}
+    # evt_025 is the one illustrative (fictional, clearly-labeled) demo scenario
+    illustrative_ids = [e["id"] for e in events if e["illustrative"]]
+    assert illustrative_ids == ["evt_025"]
 
 
 def test_get_event_result_evt_001():
@@ -52,4 +55,4 @@ def test_api_routes_not_shadowed_by_static_mount():
     assert response.status_code == 200
     body = response.json()
     assert "events" in body
-    assert len(body["events"]) == 23
+    assert len(body["events"]) == 24

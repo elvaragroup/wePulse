@@ -619,17 +619,38 @@ function buildCallout(payload) {
  *
  * @param {Array<object>} events
  */
+function appendEventOptions(container, events) {
+  events.forEach((event) => {
+    const option = el('option', null, `${event.company} — ${event.headline}`);
+    option.value = event.id;
+    container.appendChild(option);
+  });
+}
+
 export function populateEventSelect(events) {
   clear(dom.select);
   const placeholder = el('option', null, 'Select an announcement…');
   placeholder.value = '';
   dom.select.appendChild(placeholder);
 
-  events.forEach((event) => {
-    const option = el('option', null, `${event.company} — ${event.headline}`);
-    option.value = event.id;
-    dom.select.appendChild(option);
-  });
+  const real = events.filter((event) => !event.illustrative);
+  const illustrative = events.filter((event) => event.illustrative);
+
+  // Grouped so illustrative (fictional) scenarios are never presented
+  // unlabeled alongside real historical announcements.
+  if (illustrative.length === 0) {
+    appendEventOptions(dom.select, real);
+  } else {
+    const realGroup = document.createElement('optgroup');
+    realGroup.label = 'Real historical announcements';
+    appendEventOptions(realGroup, real);
+    dom.select.appendChild(realGroup);
+
+    const illustrativeGroup = document.createElement('optgroup');
+    illustrativeGroup.label = 'Illustrative scenarios (not real announcements)';
+    appendEventOptions(illustrativeGroup, illustrative);
+    dom.select.appendChild(illustrativeGroup);
+  }
 
   dom.select.disabled = events.length === 0;
 }
@@ -647,6 +668,16 @@ export function showSelectMessage(message) {
 export function renderEventContext(payload) {
   const event = payload.event;
   const card = el('section', 'card event-card');
+
+  if (event.illustrative) {
+    card.appendChild(
+      el(
+        'p',
+        'illustrative-banner',
+        'Illustrative scenario — a fictional company and announcement, not a real historical event.',
+      ),
+    );
+  }
 
   card.appendChild(el('p', 'event-card__company', event.company));
   card.appendChild(el('h2', 'event-card__headline', event.headline));

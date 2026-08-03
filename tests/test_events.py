@@ -52,10 +52,36 @@ def test_round_trips_a_multi_event_file():
     assert "PRIOR STATEMENTS" not in second.announcement
 
 
+def test_illustrative_defaults_false_when_header_absent():
+    events = parse_events(TWO_EVENTS)
+    assert all(e.illustrative is False for e in events)
+
+
+def test_illustrative_true_when_header_present():
+    text = TWO_EVENTS.replace(
+        "expected_null: true\n---",
+        "expected_null: true\nillustrative: true\n---",
+    )
+    events = parse_events(text)
+    assert events[1].illustrative is True
+    assert events[0].illustrative is False
+
+
+def test_illustrative_never_appears_in_a_prompt():
+    text = TWO_EVENTS.replace(
+        "expected_null: true\n---",
+        "expected_null: true\nillustrative: true\n---",
+    )
+    for event in parse_events(text):
+        prompt = event.to_prompt()
+        assert "illustrative" not in prompt
+
+
 def test_repo_events_file_parses(repo):
     events = load_events(repo / "inputs" / "events.txt")
-    assert len(events) == 23
+    assert len(events) == 24
     assert events[2].prior_statements is not None
+    assert sum(1 for e in events if e.illustrative) == 1
 
 
 def test_null_share():

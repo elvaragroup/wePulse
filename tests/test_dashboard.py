@@ -179,6 +179,7 @@ def make_event(**overrides) -> Event:
         headline="Acme introduces Acme Assist",
         source_url=None,
         expected_null=False,
+        illustrative=False,
         announcement="Acme Corp today announced Acme Assist.",
         prior_statements=None,
     )

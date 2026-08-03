@@ -14,13 +14,25 @@ Demo page UI/UX fix pass complete (2026-08-02): ground-truth display mechanism b
 end-to-end (`ground_truth: null` today, renders an honest "pending verification" state,
 never a fabricated outcome), unexplained concern-bar dashes replaced with "not a top
 concern this run", Persona Ensemble card reordered to lead with quotes, reaction colors
-unified via shared CSS variables, panel-size label added. Event curation (item 5 of the
-original fix list, including the DeepSeek/evt_013 label question) is explicitly deferred —
-it depends on real ground truth existing, which it doesn't yet. Full details:
-`docs/superpowers/specs/2026-08-02-persona-improvement-methodology.md` and this session's
-plan. The moment `label_truth.py` produces real `ground_truth/labeled/<event_id>.json`
-files, the UI starts showing resolved outcomes and correct/incorrect marks with zero
-further frontend changes needed.
+unified via shared CSS variables, panel-size label added. Event curation on the 23 real
+events (item 5 of the original fix list, including the DeepSeek/evt_013 label question) is
+still deferred — it depends on real ground truth existing, which it doesn't yet. Full
+details: `docs/superpowers/specs/2026-08-02-persona-improvement-methodology.md`. The moment
+`label_truth.py` produces real `ground_truth/labeled/<event_id>.json` files, the UI starts
+showing resolved outcomes and correct/incorrect marks with zero further frontend changes
+needed.
+
+**Added one illustrative (fictional, clearly-labeled) demo event, `evt_025` (Noteflow)**
+(2026-08-02), for outreach/demo purposes only — real simulation run via `run_sim.py`
+against a real `ANTHROPIC_API_KEY` (now present in `.env`), not fabricated. Result: naive AI
+predicted backlash (privacy/overclaim/security), the ensemble predicted no backlash
+(17% privacy, below the 25% threshold) — a genuine "single AI call raises a false alarm,
+ensemble stays calibrated" example, consistent with the pattern already present across all
+15 real-event disagreements in the actual 23-event set. A first candidate (`evt_024`, Lumen
+Fit) was tried and set aside — both arms predicted backlash, so it didn't serve the demo
+narrative; kept out of `events.txt`, noted in `inputs/events_illustrative.txt`. Illustrative
+events are permanently excluded from `ground_truth/`, `score.py`, and `VERSIONS.md` (see
+`ground_truth/README.md`) — they have no real-world outcome to measure against.
 
 ## Next
 

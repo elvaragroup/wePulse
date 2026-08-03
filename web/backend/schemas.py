@@ -49,6 +49,7 @@ class EventSummaryOut(BaseModel):
     headline: str
     date: str
     sector: str
+    illustrative: bool
 
 
 class EventContextOut(BaseModel):
@@ -59,6 +60,7 @@ class EventContextOut(BaseModel):
     sector: str
     source_url: str | None
     announcement: str
+    illustrative: bool
 
 
 class CategoryScoreOut(BaseModel):
@@ -123,6 +125,7 @@ def to_event_summary_out(summary: EventSummary) -> EventSummaryOut:
         headline=summary.headline,
         date=summary.date,
         sector=summary.sector,
+        illustrative=summary.illustrative,
     )
 
 
@@ -135,6 +138,7 @@ def to_event_context_out(event: EventContext) -> EventContextOut:
         sector=event.sector,
         source_url=event.source_url,
         announcement=event.announcement,
+        illustrative=event.illustrative,
     )
 
 

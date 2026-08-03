@@ -11,13 +11,16 @@ from web.backend.service import (
 )
 
 
-def test_list_event_summaries_returns_all_23(repo):
+def test_list_event_summaries_returns_all_24(repo):
     summaries = list_event_summaries(repo=repo)
-    assert len(summaries) == 23
+    assert len(summaries) == 24
     assert summaries[0].id == "evt_001"
     assert summaries[0].company  # non-empty
+    assert summaries[0].illustrative is False
     ids = [s.id for s in summaries]
-    assert ids == sorted(ids)  # evt_001..evt_023 file order
+    assert ids == sorted(ids)  # evt_001..evt_024, sorted by id
+    illustrative_ids = [s.id for s in summaries if s.illustrative]
+    assert illustrative_ids == ["evt_025"]
 
 
 def test_build_event_result_evt_001_matches_real_data(repo):

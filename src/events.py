@@ -8,6 +8,10 @@ Two properties matter here beyond ordinary parsing:
 2. `expected_null` is the user's a priori guess and must never reach a model
    (spec 2.3). It is parsed onto the Event but `to_prompt()` returns only the
    announcement text, so there is no code path that carries it into a request.
+
+`illustrative` (optional, defaults False) marks a fictional demo scenario rather
+than a real historical announcement. Display/bookkeeping only, same treatment
+as `expected_null` -- never reaches `to_prompt()`, never scored (ground_truth/README.md).
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ HEADER_SEP = "---"
 PRIOR_SEP = "--- PRIOR STATEMENTS ---"
 
 REQUIRED_HEADERS = ("id", "company", "sector", "date", "headline", "expected_null")
-OPTIONAL_HEADERS = ("source_url",)
+OPTIONAL_HEADERS = ("source_url", "illustrative")
 
 _EVENT_ID = re.compile(r"^evt_\d{3,}$")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -41,6 +45,7 @@ class Event:
     headline: str
     source_url: str | None
     expected_null: bool
+    illustrative: bool
     announcement: str
     prior_statements: str | None
 
@@ -122,6 +127,11 @@ def _parse_block(block: str, *, index: int) -> Event:
         headline=headers["headline"],
         source_url=headers.get("source_url") or None,
         expected_null=_parse_bool(headers["expected_null"], event_id=event_id, field="expected_null"),
+        illustrative=(
+            _parse_bool(headers["illustrative"], event_id=event_id, field="illustrative")
+            if "illustrative" in headers
+            else False
+        ),
         announcement=announcement,
         prior_statements=prior_statements,
     )

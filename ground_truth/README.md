@@ -8,9 +8,14 @@ in what order, in what format.
 today is 2026-08-02). This is retroactive research — finding archived reaction threads —
 not a 72h wait.
 
-Predictions already exist for all 23 events
+Predictions already exist for all 23 real events
 (`runs/20260730T002314.423Z_2ec30ae6/predictions/`), so `label_truth.py` is ready the moment
 a `raw/<event_id>.txt` file exists. Ground truth is the only missing ingredient.
+
+**`evt_025` (`illustrative: true`) is out of scope for this entire pipeline.** It's a
+fictional demo scenario (Noteflow) with no real-world outcome to collect — never paste
+ground truth for it, never run `label_truth.py`/`score.py` against it, never reference it in
+`VERSIONS.md`. Any future `illustrative: true` event follows the same rule.
 
 ## Format (fixed by spec §2.4 — do not deviate)
 
@@ -71,7 +76,9 @@ rest on events the model may already know the outcome of. Re-verify this against
 `probe_leakage.py`'s actual `CONTAMINATED`/`CLEAN` output once ground truth exists for these
 seven; the partition is currently based on content inspection, not a leakage run.
 
-## All 23 events, for reference
+## All 23 real events, for reference
+
+(`evt_025` is excluded — see the illustrative-scenario note above.)
 
 | id | company | expected_null |
 |---|---|---|

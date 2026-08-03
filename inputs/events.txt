@@ -446,3 +446,18 @@ Customer support provider AnswerConnect today released the results of a 6,000-pe
 
 The report found that 82% of respondents experienced increased frustration when unable to reach a human representative, with 68% reporting a decline in overall trust toward brands that deploy mandatory AI chatbots for service resolution. The company advocated for a hybrid human-in-the-loop support model.
 === END EVENT ===
+
+=== EVENT ===
+id: evt_025
+company: Noteflow
+sector: productivity_software
+date: 2026-08-01
+headline: Noteflow introduces Suggestions, an assistant that prepares context before your meetings
+source_url: https://example.invalid/press/noteflow-suggestions
+expected_null: false
+illustrative: true
+---
+FOR IMMEDIATE RELEASE
+
+Noteflow today introduced Suggestions, a new assistant built into every workspace. Before each meeting on your calendar, Suggestions reviews your notes, past meeting history, and related documents to prepare a short briefing, so you walk in ready without digging through old threads yourself. Suggestions is on by default for all users starting this week. You can turn it off anytime in Settings > Assistant. We built Suggestions because the best part of your day shouldn't start with fifteen minutes of searching.
+=== END EVENT ===

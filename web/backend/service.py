@@ -62,6 +62,7 @@ class EventSummary:
     headline: str
     date: str
     sector: str
+    illustrative: bool
 
 
 @dataclass(frozen=True)
@@ -73,6 +74,7 @@ class EventContext:
     sector: str
     source_url: str | None
     announcement: str
+    illustrative: bool
 
 
 @dataclass(frozen=True)
@@ -148,7 +150,14 @@ def list_event_summaries(repo: Path = REPO) -> list[EventSummary]:
     """
     events = _load_events_cached(repo)
     summaries = [
-        EventSummary(id=e.id, company=e.company, headline=e.headline, date=e.date, sector=e.sector)
+        EventSummary(
+            id=e.id,
+            company=e.company,
+            headline=e.headline,
+            date=e.date,
+            sector=e.sector,
+            illustrative=e.illustrative,
+        )
         for e in events
     ]
     return sorted(summaries, key=lambda s: s.id)
@@ -190,6 +199,7 @@ def build_event_result(event_id: str, repo: Path = REPO) -> EventResult:
         sector=event.sector,
         source_url=event.source_url,
         announcement=event.announcement,
+        illustrative=event.illustrative,
     )
 
     naive_result = NaiveResult(

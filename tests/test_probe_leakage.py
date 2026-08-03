@@ -19,6 +19,7 @@ EVENT = Event(
     headline="Acme launches an AI layer",
     source_url=None,
     expected_null=False,
+    illustrative=False,
     announcement="Acme Corp today announced an AI layer.",
     prior_statements=None,
 )

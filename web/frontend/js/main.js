@@ -157,7 +157,13 @@ async function init() {
     }
     populateEventSelect(events);
     setRunEnabled(false);
-    setHint(`${events.length} real-world announcements ready to replay.`);
+    const illustrativeCount = events.filter((event) => event.illustrative).length;
+    const realCount = events.length - illustrativeCount;
+    setHint(
+      illustrativeCount > 0
+        ? `${realCount} real-world announcements and ${illustrativeCount} illustrative scenario${illustrativeCount === 1 ? '' : 's'} ready to replay.`
+        : `${realCount} real-world announcements ready to replay.`,
+    );
   } catch (error) {
     showSelectMessage('Announcements unavailable');
     setHint('');

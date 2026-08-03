@@ -495,6 +495,21 @@ a {
   padding: 24px 26px;
 }
 
+.illustrative-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  font-weight: 640;
+  letter-spacing: 0.01em;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid #f0d9a8;
+  border-radius: 999px;
+  padding: 5px 13px;
+}
+
 .event-card__company {
   font-size: 0.85rem;
   font-weight: 640;

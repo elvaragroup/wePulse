@@ -1,0 +1,25 @@
+# The illustrative (fictional) demo scenario(s) currently in events.txt, split
+# out so they can be run/re-run independently of the 23 real events without
+# needing a fresh arm-C human stub for every real event each time. Never a
+# scored file -- illustrative events have no real-world outcome
+# (ground_truth/README.md).
+#
+# evt_024 (Lumen Fit) was an earlier candidate, tried and set aside: both
+# naive and the ensemble predicted backlash, so it didn't serve as a useful
+# illustrative example and isn't in events.txt. Kept out of this file too, to
+# avoid confusion for a future re-run.
+
+=== EVENT ===
+id: evt_025
+company: Noteflow
+sector: productivity_software
+date: 2026-08-01
+headline: Noteflow introduces Suggestions, an assistant that prepares context before your meetings
+source_url: https://example.invalid/press/noteflow-suggestions
+expected_null: false
+illustrative: true
+---
+FOR IMMEDIATE RELEASE
+
+Noteflow today introduced Suggestions, a new assistant built into every workspace. Before each meeting on your calendar, Suggestions reviews your notes, past meeting history, and related documents to prepare a short briefing, so you walk in ready without digging through old threads yourself. Suggestions is on by default for all users starting this week. You can turn it off anytime in Settings > Assistant. We built Suggestions because the best part of your day shouldn't start with fifteen minutes of searching.
+=== END EVENT ===
