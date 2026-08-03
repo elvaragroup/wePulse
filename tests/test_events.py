@@ -54,7 +54,7 @@ def test_round_trips_a_multi_event_file():
 
 def test_repo_events_file_parses(repo):
     events = load_events(repo / "inputs" / "events.txt")
-    assert len(events) == 3
+    assert len(events) == 23
     assert events[2].prior_statements is not None
 
 
