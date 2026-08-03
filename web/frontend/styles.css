@@ -570,6 +570,10 @@ a {
   transform: translateY(1px) rotate(-135deg);
 }
 
+.announcement:not([open]) .announcement__body {
+  display: none;
+}
+
 .announcement__body {
   margin-top: 12px;
   white-space: pre-wrap;
