@@ -4,6 +4,16 @@ Read this first after any session/token reset. Update it before ending a session
 
 **Last updated:** 2026-08-02
 
+## Resume here tomorrow
+
+1. `main` has **2 unpushed commits** (`9f71d79`, `3247db4`) — push first thing:
+   `git push origin main`. (Not yet pushed as of this writing — ask before pushing per
+   normal practice, but don't forget it.)
+2. Working tree is otherwise clean, all 344 tests passing, demo verified live in browser.
+3. Pick up at "Next" below — item 1 (Voyage key) and item 2 (ground truth collection,
+   `ground_truth/README.md` Batch 0) are both still the real priorities; the illustrative
+   demo event work is a finished side-track, not a blocker for either.
+
 ## Now
 
 Repo cleanup complete: the two previously-stranded feature branches (Milestone A
